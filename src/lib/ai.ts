@@ -277,3 +277,142 @@ export function stripJSON(text: string): string {
   const lastBrace = Math.max(text.lastIndexOf('}'), text.lastIndexOf(']'));
   return text.slice(start, lastBrace + 1).trim();
 }
+
+// ============ Embedding（用于 JD 匹配推荐） ============
+
+const DEFAULT_EMBEDDING_MODEL = 'text-embedding-3-small';
+const DEFAULT_EMBEDDING_DIM = 1536;
+
+/**
+ * 判断当前配置能否在浏览器直调 embedding（OpenAI 兼容）
+ */
+export function canEmbedLocally(settings: AISettings): boolean {
+  if (settings.provider === 'openai') return true;
+  // 自定义 baseUrl 指向 OpenAI 兼容服务时也可
+  if (settings.embeddingBaseUrl) return true;
+  return false;
+}
+
+/**
+ * 计算 embedding。
+ * - openai / 自定义 embeddingBaseUrl：浏览器直调（零信任，key 不离开浏览器）
+ * - trial / 其他无 embedding 的 provider：走 Worker 代理
+ *   Worker 端 AI_GATEWAY 必须配 OpenAI 兼容的 embedding 服务
+ */
+export async function embed(
+  texts: string[],
+  settings: AISettings,
+  signal?: AbortSignal
+): Promise<number[][]> {
+  const inputs = texts.map(t => t.trim()).filter(Boolean);
+  if (inputs.length === 0) return [];
+
+  if (canEmbedLocally(settings)) {
+    return embedViaOwnKey(inputs, settings, signal);
+  }
+  // 降级：Worker 代理（trial 模式或 anthropic/deepseek 用户）
+  return embedViaWorker(inputs, signal);
+}
+
+async function embedViaOwnKey(
+  texts: string[],
+  settings: AISettings,
+  signal?: AbortSignal
+): Promise<number[][]> {
+  const baseUrl = (settings.embeddingBaseUrl ?? settings.baseUrl ?? PROVIDER_BASE_URL.openai).replace(/\/$/, '');
+  const url = `${baseUrl}/embeddings`;
+  const model = settings.embeddingModel ?? DEFAULT_EMBEDDING_MODEL;
+  const apiKey = settings.embeddingApiKey ?? settings.apiKey;
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({ model, input: texts }),
+    signal
+  });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '');
+    throw new Error(`Embedding 失败 (${res.status})：${detail.slice(0, 200)}`);
+  }
+  const data = await res.json();
+  return (data.data as Array<{ embedding: number[] }>)
+    .sort((a, b) => 0) // 顺序保证由 API 保证
+    .map(d => d.embedding);
+}
+
+async function embedViaWorker(texts: string[], signal?: AbortSignal): Promise<number[][]> {
+  // Worker 端点：/api/embedding
+  const workerBase = TRIAL_WORKER_URL.replace(/\/api\/ai\/?$/, '/api');
+  const res = await fetch(`${workerBase}/embedding`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ texts }),
+    signal
+  });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '');
+    throw new Error(`Worker embedding 失败 (${res.status})：${detail.slice(0, 200)}`);
+  }
+  const data = await res.json();
+  return data.embeddings as number[][];
+}
+
+export const EMBEDDING_DIM = DEFAULT_EMBEDDING_DIM;
+
+// ============ 共享池（阶段二：Vectorize） ============
+
+export interface UploadToSharedPoolArgs {
+  jobTitle: string;
+  company: string;
+  city?: string;
+  salary?: string;
+  jdText: string;
+  embedding: number[];
+}
+
+/**
+ * 上传 JD 到共享池（Vectorize）。
+ * 只上传 embedding + metadata，不上传完整 jdText（隐私：JD 本身公开，但谁在看是隐私）。
+ */
+export async function uploadToSharedPool(args: UploadToSharedPoolArgs, signal?: AbortSignal): Promise<{ id: string } | null> {
+  const workerBase = TRIAL_WORKER_URL.replace(/\/api\/ai\/?$/, '/api');
+  try {
+    const res = await fetch(`${workerBase}/jd/import`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(args),
+      signal
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null; // 静默失败，共享池是 nice-to-have
+  }
+}
+
+/**
+ * 从共享池查 top-K 匹配 JD。
+ */
+export async function querySharedPool(
+  profileEmbedding: number[],
+  topK = 20,
+  signal?: AbortSignal
+): Promise<Array<{ id: string; score: number; jobTitle: string; company: string; city?: string; salary?: string }>> {
+  const workerBase = TRIAL_WORKER_URL.replace(/\/api\/ai\/?$/, '/api');
+  try {
+    const res = await fetch(`${workerBase}/match`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ embedding: profileEmbedding, topK }),
+      signal
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.matches ?? [];
+  } catch {
+    return []; // 静默失败
+  }
+}

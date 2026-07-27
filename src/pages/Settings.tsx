@@ -149,6 +149,55 @@ export default function Settings() {
         </button>
       </div>
 
+      {/* Embedding 配置（JD 匹配推荐用） */}
+      <div className="card p-5 space-y-3">
+        <div>
+          <h2 className="text-sm font-semibold text-ink-100 mb-1">Embedding 配置</h2>
+          <p className="text-xs text-ink-500">用于 JD 池匹配推荐。默认复用上面的 OpenAI 配置；Anthropic/DeepSeek 用户需单独配置 OpenAI 兼容端点或切 Trial 模式走 Worker 代理。</p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="label">Embedding 模型</label>
+            <input
+              className="input font-mono text-xs"
+              value={form.embeddingModel ?? ''}
+              onChange={e => setForm({ ...form, embeddingModel: e.target.value })}
+              placeholder="text-embedding-3-small"
+            />
+          </div>
+          <div>
+            <label className="label">Embedding API Key（留空复用上方）</label>
+            <input
+              type="password"
+              className="input font-mono text-xs"
+              value={form.embeddingApiKey ?? ''}
+              onChange={e => setForm({ ...form, embeddingApiKey: e.target.value })}
+              placeholder="留空复用 chat API Key"
+              autoComplete="off"
+            />
+          </div>
+        </div>
+        <div>
+          <label className="label">Embedding Base URL（留空复用上方）</label>
+          <input
+            className="input font-mono text-xs"
+            value={form.embeddingBaseUrl ?? ''}
+            onChange={e => setForm({ ...form, embeddingBaseUrl: e.target.value })}
+            placeholder="留空复用 chat baseUrl（仅 OpenAI 兼容）"
+          />
+        </div>
+        <div className="text-[11px] text-ink-500">
+          {form.provider === 'openai'
+            ? '✓ OpenAI 默认支持 embedding，留空即可'
+            : form.provider === 'trial'
+            ? '✓ Trial 模式自动走 Worker 代理（共享池需 Worker 配置 Vectorize）'
+            : '⚠ 当前 chat provider 不支持 embedding，请填 OpenAI 兼容端点，或切 Trial 模式'}
+        </div>
+        <button className="btn-outline w-full text-xs" onClick={save} disabled={saving}>
+          保存 Embedding 配置
+        </button>
+      </div>
+
       {/* 数据管理 */}
       <div className="card p-5 space-y-3">
         <div>

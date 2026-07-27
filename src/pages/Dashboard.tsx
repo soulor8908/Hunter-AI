@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { listApplications, listExperiences, listInterviews, listResumes, getProfile } from '@/lib/db';
+import { listApplications, listExperiences, listInterviews, listResumes, listJobLeads, getProfile } from '@/lib/db';
 import { relativeTime, cn } from '@/lib/utils';
-import type { Application, CareerProfile, Experience, InterviewPrep, ResumeVersion } from '@/types';
+import type { Application, CareerProfile, Experience, InterviewPrep, JobLead, ResumeVersion } from '@/types';
 import { useStore } from '@/store/useStore';
 
 const STAGE_LABEL: Record<Application['stage'], { label: string; color: string }> = {
@@ -21,28 +21,31 @@ export default function Dashboard() {
   const [resumes, setResumes] = useState<ResumeVersion[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
   const [interviews, setInterviews] = useState<InterviewPrep[]>([]);
+  const [jobLeads, setJobLeads] = useState<JobLead[]>([]);
   const aiSettings = useStore((s) => s.aiSettings);
 
   useEffect(() => {
     (async () => {
-      const [p, e, r, a, i] = await Promise.all([
+      const [p, e, r, a, i, j] = await Promise.all([
         getProfile(),
         listExperiences(),
         listResumes(),
         listApplications(),
-        listInterviews()
+        listInterviews(),
+        listJobLeads()
       ]);
       setProfile(p ?? null);
       setExperiences(e);
       setResumes(r);
       setApplications(a);
       setInterviews(i);
+      setJobLeads(j);
     })();
   }, []);
 
   const stats = [
     { label: '职业档案', value: profile?.name ? '已建立' : '未建立', to: '/profile', icon: '◉', accent: !profile?.name },
-    { label: '经历条目', value: experiences.length, to: '/profile', icon: '▤' },
+    { label: 'JD 池', value: jobLeads.length, to: '/jobs', icon: '⌖' },
     { label: '简历版本', value: resumes.length, to: '/resume', icon: '✦' },
     { label: '投递记录', value: applications.length, to: '/tracking', icon: '◈' },
     { label: '面试准备', value: interviews.length, to: '/interview', icon: '◈' }
@@ -74,11 +77,14 @@ export default function Dashboard() {
             粘贴 JD → 一键生成专属简历 → 拆解面试题 → 追踪投递。所有数据存浏览器，不上云。
           </p>
           <div className="flex flex-wrap gap-2 mt-4">
-            <Link to="/resume" className="btn-primary text-xs md:text-sm">
+            <Link to="/jobs" className="btn-primary text-xs md:text-sm">
+              ⌖ 导入 JD 找匹配
+            </Link>
+            <Link to="/resume" className="btn-outline text-xs md:text-sm">
               ✦ 粘贴 JD 生成简历
             </Link>
             {!profile?.name && (
-              <Link to="/profile" className="btn-outline text-xs md:text-sm">
+              <Link to="/profile" className="btn-ghost text-xs md:text-sm">
                 ◉ 先建立职业档案
               </Link>
             )}

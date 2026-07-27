@@ -44,6 +44,18 @@ export default function ResumeGen() {
           setSavedId(loaded.id);
           setStep(loaded.markdown ? 'done' : (loaded.jdAnalysis ? 'analyzed' : 'input'));
         }
+      } else {
+        // 从 Jobs 页预填
+        const prefill = sessionStorage.getItem('jobs:prefill');
+        if (prefill) {
+          sessionStorage.removeItem('jobs:prefill');
+          try {
+            const data = JSON.parse(prefill);
+            if (data.jobTitle) setJobTitle(data.jobTitle);
+            if (data.company) setCompany(data.company);
+            if (data.jdText) setJdText(data.jdText);
+          } catch { /* ignore */ }
+        }
       }
     })();
   }, [id]);

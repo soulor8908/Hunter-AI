@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import Dashboard from '@/pages/Dashboard';
 import Profile from '@/pages/Profile';
+import Jobs from '@/pages/Jobs';
 import ResumeGen from '@/pages/ResumeGen';
 import Interview from '@/pages/Interview';
 import Tracking from '@/pages/Tracking';
@@ -23,6 +24,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/jobs" element={<Jobs />} />
         <Route path="/resume" element={<ResumeGen />} />
         <Route path="/resume/:id" element={<ResumeGen />} />
         <Route path="/interview" element={<Interview />} />

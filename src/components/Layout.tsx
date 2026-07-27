@@ -12,6 +12,7 @@ interface NavItem {
 const NAV: NavItem[] = [
   { to: '/', label: '总览', icon: '◈', desc: 'Dashboard' },
   { to: '/profile', label: '职业档案', icon: '◉', desc: '长期上下文' },
+  { to: '/jobs', label: 'JD 匹配', icon: '⌖', desc: '推荐 + 投递池' },
   { to: '/resume', label: '简历生成', icon: '✦', desc: '一岗一简历' },
   { to: '/interview', label: '面试准备', icon: '◈', desc: '投递即学习' },
   { to: '/tracking', label: '投递追踪', icon: '▤', desc: 'Pipeline' },
@@ -20,9 +21,9 @@ const NAV: NavItem[] = [
 ];
 
 // 移动端底部 Tab：5 个核心入口（拇指可达）
-const MOBILE_PRIMARY: string[] = ['/', '/resume', '/interview', '/tracking', '/chat'];
-// 溢出菜单：档案 + 设置
-const MOBILE_OVERFLOW: string[] = ['/profile', '/settings'];
+const MOBILE_PRIMARY: string[] = ['/', '/jobs', '/resume', '/tracking', '/chat'];
+// 溢出菜单：档案 + 面试 + 设置
+const MOBILE_OVERFLOW: string[] = ['/profile', '/interview', '/settings'];
 
 export default function Layout({ children }: { children: ReactNode }) {
   const loc = useLocation();

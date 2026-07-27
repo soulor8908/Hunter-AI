@@ -9,11 +9,12 @@ import type {
   ChatSession,
   Experience,
   InterviewPrep,
+  JobLead,
   ResumeVersion
 } from '@/types';
 
 const DB_NAME = 'hunter-ai';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 interface HunterDB extends DBSchema {
   profile: { key: string; value: CareerProfile };
@@ -23,6 +24,7 @@ interface HunterDB extends DBSchema {
   interview: { key: string; value: InterviewPrep };
   chat: { key: string; value: ChatSession };
   aiSettings: { key: string; value: AISettings & { id: string } };
+  jobLead: { key: string; value: JobLead; indexes: { 'by-status': string } };
 }
 
 let dbPromise: Promise<IDBPDatabase<HunterDB>> | null = null;
@@ -30,30 +32,26 @@ let dbPromise: Promise<IDBPDatabase<HunterDB>> | null = null;
 function getDB() {
   if (!dbPromise) {
     dbPromise = openDB<HunterDB>(DB_NAME, DB_VERSION, {
-      upgrade(db) {
-        if (!db.objectStoreNames.contains('profile')) {
+      upgrade(db, oldVersion) {
+        // v1 初始 stores
+        if (oldVersion < 1) {
           db.createObjectStore('profile', { keyPath: 'id' });
-        }
-        if (!db.objectStoreNames.contains('experience')) {
-          const s = db.createObjectStore('experience', { keyPath: 'id' });
-          s.createIndex('by-type', 'type');
-        }
-        if (!db.objectStoreNames.contains('resume')) {
-          const s = db.createObjectStore('resume', { keyPath: 'id' });
-          s.createIndex('by-profile', 'profileId');
-        }
-        if (!db.objectStoreNames.contains('application')) {
-          const s = db.createObjectStore('application', { keyPath: 'id' });
-          s.createIndex('by-stage', 'stage');
-        }
-        if (!db.objectStoreNames.contains('interview')) {
+          const exp = db.createObjectStore('experience', { keyPath: 'id' });
+          exp.createIndex('by-type', 'type');
+          const res = db.createObjectStore('resume', { keyPath: 'id' });
+          res.createIndex('by-profile', 'profileId');
+          const app = db.createObjectStore('application', { keyPath: 'id' });
+          app.createIndex('by-stage', 'stage');
           db.createObjectStore('interview', { keyPath: 'id' });
-        }
-        if (!db.objectStoreNames.contains('chat')) {
           db.createObjectStore('chat', { keyPath: 'id' });
-        }
-        if (!db.objectStoreNames.contains('aiSettings')) {
           db.createObjectStore('aiSettings', { keyPath: 'id' });
+        }
+        // v2: 加 jobLead store（JD 池 + 匹配推荐）
+        if (oldVersion < 2) {
+          if (!db.objectStoreNames.contains('jobLead')) {
+            const s = db.createObjectStore('jobLead', { keyPath: 'id' });
+            s.createIndex('by-status', 'status');
+          }
         }
       }
     });
@@ -80,6 +78,10 @@ export async function saveProfile(p: Partial<CareerProfile>): Promise<CareerProf
     targetCities: p.targetCities ?? existing?.targetCities ?? [],
     expectedSalary: p.expectedSalary ?? existing?.expectedSalary ?? '',
     contact: p.contact ?? existing?.contact ?? {},
+    // embedding 字段：显式传入时更新，否则保留旧值
+    embedding: p.embedding !== undefined ? p.embedding : existing?.embedding,
+    embeddingTextHash: p.embeddingTextHash !== undefined ? p.embeddingTextHash : existing?.embeddingTextHash,
+    embeddingUpdatedAt: p.embeddingUpdatedAt !== undefined ? p.embeddingUpdatedAt : existing?.embeddingUpdatedAt,
     createdAt: existing?.createdAt ?? now,
     updatedAt: now
   };
@@ -285,13 +287,14 @@ export async function saveAISettings(s: AISettings): Promise<void> {
 // ============ 导出/导入（用户主权） ============
 export async function exportAll(): Promise<string> {
   const db = await getDB();
-  const [profile, experiences, resumes, applications, interviews, chats] = await Promise.all([
+  const [profile, experiences, resumes, applications, interviews, chats, jobLeads] = await Promise.all([
     db.get('profile', 'default'),
     db.getAll('experience'),
     db.getAll('resume'),
     db.getAll('application'),
     db.getAll('interview'),
-    db.getAll('chat')
+    db.getAll('chat'),
+    db.getAll('jobLead')
   ]);
   return JSON.stringify({
     version: DB_VERSION,
@@ -301,19 +304,65 @@ export async function exportAll(): Promise<string> {
     resumes,
     applications,
     interviews,
-    chats
+    chats,
+    jobLeads
   }, null, 2);
 }
 
 export async function importAll(json: string): Promise<void> {
   const db = await getDB();
   const data = JSON.parse(json);
-  const tx = db.transaction(['profile', 'experience', 'resume', 'application', 'interview', 'chat'], 'readwrite');
+  const tx = db.transaction(['profile', 'experience', 'resume', 'application', 'interview', 'chat', 'jobLead'], 'readwrite');
   if (data.profile) await tx.objectStore('profile').put(data.profile);
   for (const e of data.experiences ?? []) await tx.objectStore('experience').put(e);
   for (const r of data.resumes ?? []) await tx.objectStore('resume').put(r);
   for (const a of data.applications ?? []) await tx.objectStore('application').put(a);
   for (const i of data.interviews ?? []) await tx.objectStore('interview').put(i);
   for (const c of data.chats ?? []) await tx.objectStore('chat').put(c);
+  for (const j of data.jobLeads ?? []) await tx.objectStore('jobLead').put(j);
   await tx.done;
+}
+
+// ============ JD 池（JobLead） ============
+export async function listJobLeads(): Promise<JobLead[]> {
+  const db = await getDB();
+  const all = await db.getAll('jobLead');
+  return all.sort((a, b) => b.importedAt - a.importedAt);
+}
+
+export async function getJobLead(id: string): Promise<JobLead | undefined> {
+  const db = await getDB();
+  return db.get('jobLead', id);
+}
+
+export async function saveJobLead(j: Partial<JobLead> & { jobTitle: string; company: string; jdText: string }): Promise<JobLead> {
+  const db = await getDB();
+  const now = Date.now();
+  const id = j.id ?? nanoid();
+  const existing = j.id ? await db.get('jobLead', j.id) : undefined;
+  const merged: JobLead = {
+    id,
+    jobTitle: j.jobTitle,
+    company: j.company,
+    jdText: j.jdText,
+    source: j.source ?? existing?.source ?? 'manual',
+    sourceUrl: j.sourceUrl ?? existing?.sourceUrl,
+    city: j.city ?? existing?.city,
+    salary: j.salary ?? existing?.salary,
+    jdAnalysis: j.jdAnalysis ?? existing?.jdAnalysis,
+    embedding: j.embedding ?? existing?.embedding,
+    matchScore: j.matchScore ?? existing?.matchScore,
+    matchReasons: j.matchReasons ?? existing?.matchReasons,
+    status: j.status ?? existing?.status ?? 'new',
+    fromSharedPool: j.fromSharedPool ?? existing?.fromSharedPool,
+    importedAt: existing?.importedAt ?? now,
+    updatedAt: now
+  };
+  await db.put('jobLead', merged);
+  return merged;
+}
+
+export async function deleteJobLead(id: string): Promise<void> {
+  const db = await getDB();
+  await db.delete('jobLead', id);
 }

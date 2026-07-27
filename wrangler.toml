@@ -3,16 +3,28 @@ main = "worker/index.ts"
 compatibility_date = "2024-09-23"
 
 # Trial 模式环境变量（在 Dashboard → Settings → Variables 中配置 secret）
-# AI_GATEWAY_PROVIDER = "deepseek"
+# AI_GATEWAY_PROVIDER = "deepseek"   # chat 用；embedding 建议配成 openai 兼容
 # AI_GATEWAY_API_KEY = "sk-..."
 # AI_GATEWAY_MODEL = "deepseek-chat"
 # TRIAL_DAILY_QUOTA_PER_IP = "20"
+# Embedding 配置（共享池 + Trial 用户 embedding 代理用）
+# EMBEDDING_PROVIDER = "openai"
+# EMBEDDING_BASE_URL = "https://api.openai.com/v1"
+# EMBEDDING_API_KEY = "sk-..."      # 与 AI_GATEWAY_API_KEY 可不同
+# EMBEDDING_MODEL = "text-embedding-3-small"
 
 # KV 命名空间（需先 wrangler kv:namespace create TRIAL_KV 创建）
 [[kv_namespaces]]
 binding = "TRIAL_KV"
 id = "ab9c576d248a424c895081538270e10b"
 
+# Vectorize 索引（共享 JD 池）
+# 创建命令：wrangler vectorize create hunter-ai-jd --dimensions 1536 --metric cosine
+[[vectorize]]
+binding = "JD_INDEX"
+index_name = "hunter-ai-jd"
+
 # CORS / 路由
 [vars]
 CORS_ALLOW_ORIGIN = "*"
+

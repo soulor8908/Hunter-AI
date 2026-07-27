@@ -10,6 +10,11 @@ export interface AISettings {
   model: string;
   baseUrl?: string;        // 自定义端点（兼容 OpenAI 协议的服务）
   temperature: number;
+  // Embedding 配置：用于 JD 匹配推荐
+  // 默认复用 chat provider；OpenAI 兼容协议。Anthropic/DeepSeek 无 embedding，需走 Worker 代理或单独配置
+  embeddingModel?: string;     // 默认 'text-embedding-3-small'
+  embeddingBaseUrl?: string;   // 默认复用 baseUrl；指向 OpenAI 兼容的 /embeddings 端点
+  embeddingApiKey?: string;    // 默认复用 apiKey
 }
 
 // ============ 职业档案（长期上下文） ============
@@ -42,6 +47,9 @@ export interface CareerProfile {
     website?: string;
     linkedin?: string;
   };
+  embedding?: number[];    // 画像向量缓存（用于本地匹配）
+  embeddingTextHash?: string; // 向量对应的文本哈希，判断是否需要重算
+  embeddingUpdatedAt?: number;
   createdAt: number;
   updatedAt: number;
 }
@@ -159,4 +167,37 @@ export interface TrialQuota {
   date: string;            // YYYY-MM-DD
   used: number;
   limit: number;
+}
+
+// ============ JD 池 / 匹配推荐 ============
+export type JobLeadSource = 'manual' | 'paste' | 'shared' | 'extension';
+export type JobLeadStatus = 'new' | 'viewed' | 'applied' | 'ignored';
+
+export interface JobLead {
+  id: string;
+  jobTitle: string;
+  company: string;
+  jdText: string;
+  source: JobLeadSource;
+  sourceUrl?: string;
+  city?: string;
+  salary?: string;
+  jdAnalysis?: JDAnalysis;
+  embedding?: number[];       // JD 向量，本地匹配用
+  matchScore?: number;        // 缓存的匹配度 0-100
+  matchReasons?: string[];
+  status: JobLeadStatus;
+  fromSharedPool?: boolean;   // 是否来自共享池（阶段二）
+  importedAt: number;
+  updatedAt: number;
+}
+
+// 共享池匹配结果（来自 Vectorize 查询）
+export interface SharedJobMatch {
+  id: string;                 // Vectorize 中的向量 id
+  score: number;              // 0-1 cosine 相似度
+  jobTitle: string;
+  company: string;
+  city?: string;
+  salary?: string;
 }
