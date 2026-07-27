@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  @apply bg-ink-900 text-ink-300 font-sans antialiased;
+  background-image:
+    radial-gradient(circle at 15% 20%, rgba(16, 185, 129, 0.06), transparent 40%),
+    radial-gradient(circle at 85% 80%, rgba(59, 130, 246, 0.04), transparent 40%);
+  background-attachment: fixed;
+}
+
+/* 滚动条 */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { @apply bg-ink-700 rounded-full; }
+::-webkit-scrollbar-thumb:hover { @apply bg-ink-600; }
+
+/* 通用组件 */
+@layer components {
+  .card {
+    @apply bg-ink-800/60 backdrop-blur border border-ink-700 rounded-xl;
+  }
+  .card-hover {
+    @apply card transition-all hover:border-ink-600 hover:bg-ink-800;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply btn bg-accent text-ink-900 hover:bg-accent-glow;
+  }
+  .btn-ghost {
+    @apply btn text-ink-300 hover:bg-ink-700 hover:text-ink-100;
+  }
+  .btn-outline {
+    @apply btn border border-ink-600 text-ink-300 hover:border-accent hover:text-accent;
+  }
+  .input {
+    @apply w-full bg-ink-900/60 border border-ink-700 rounded-lg px-3 py-2 text-ink-100 placeholder:text-ink-500 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors;
+  }
+  .textarea {
+    @apply input font-mono text-sm resize-y min-h-[120px];
+  }
+  .label {
+    @apply block text-sm font-medium text-ink-400 mb-1.5;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-ink-700 text-ink-300;
+  }
+  .chip-accent {
+    @apply chip bg-accent/10 text-accent border border-accent/20;
+  }
+  .nav-item {
+    @apply flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-ink-400 hover:text-ink-100 hover:bg-ink-700/50 transition-colors cursor-pointer;
+  }
+  .nav-item-active {
+    @apply nav-item text-accent bg-accent/10;
+  }
+}
+
+/* Markdown 渲染 */
+.prose-resume {
+  @apply text-ink-300 leading-relaxed;
+}
+.prose-resume h1 { @apply text-2xl font-bold text-ink-100 mb-2; }
+.prose-resume h2 { @apply text-lg font-semibold text-ink-100 mt-5 mb-2 pb-1 border-b border-ink-700; }
+.prose-resume h3 { @apply text-base font-semibold text-ink-100 mt-3 mb-1; }
+.prose-resume p { @apply my-2; }
+.prose-resume ul { @apply list-disc pl-5 my-2 space-y-0.5; }
+.prose-resume ol { @apply list-decimal pl-5 my-2 space-y-0.5; }
+.prose-resume li { @apply text-sm; }
+.prose-resume strong { @apply text-ink-100 font-semibold; }
+.prose-resume hr { @apply my-4 border-ink-700; }
+.prose-resume code { @apply bg-ink-700 px-1.5 py-0.5 rounded text-xs font-mono text-accent-glow; }
+.prose-resume blockquote { @apply border-l-2 border-accent pl-3 italic text-ink-400 my-2; }
+
+/* 流式光标 */
+.stream-cursor::after {
+  content: '▊';
+  @apply text-accent animate-pulse ml-0.5;
+}

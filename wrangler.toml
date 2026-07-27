@@ -1,0 +1,18 @@
+name = "hunter-ai-worker"
+main = "worker/index.ts"
+compatibility_date = "2024-09-23"
+
+# Trial 模式环境变量（在 Dashboard → Settings → Variables 中配置 secret）
+# AI_GATEWAY_PROVIDER = "deepseek"
+# AI_GATEWAY_API_KEY = "sk-..."
+# AI_GATEWAY_MODEL = "deepseek-chat"
+# TRIAL_DAILY_QUOTA_PER_IP = "20"
+
+# KV 命名空间（需先 wrangler kv:namespace create TRIAL_KV 创建）
+[[kv_namespaces]]
+binding = "TRIAL_KV"
+id = "REPLACE_WITH_KV_ID"
+
+# CORS / 路由
+[vars]
+CORS_ALLOW_ORIGIN = "*"
