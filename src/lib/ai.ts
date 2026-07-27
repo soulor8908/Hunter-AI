@@ -15,8 +15,8 @@ const PROVIDER_DEFAULT_MODEL: Record<Exclude<AIProvider, 'trial'>, string> = {
   deepseek: 'deepseek-chat'
 };
 
-// 默认 Worker 端点（部署后填入）
-const TRIAL_WORKER_URL = import.meta.env.VITE_TRIAL_WORKER_URL ?? '/api/ai';
+// 已部署的 Trial Worker（Cloudflare）
+const TRIAL_WORKER_URL = import.meta.env.VITE_TRIAL_WORKER_URL ?? 'https://hunter-ai-worker.470033918.workers.dev/api/ai';
 
 export interface ChatTurn {
   role: 'system' | 'user' | 'assistant';
