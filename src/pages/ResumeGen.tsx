@@ -191,11 +191,11 @@ ${e.description ? '描述: ' + e.description : ''}
     <div className="space-y-5">
       {/* 顶栏 */}
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-ink-100">简历生成</h1>
-          <p className="text-sm text-ink-500 mt-1">粘贴 JD → AI 拆解 → 基于你的经历池生成专属简历</p>
+        <div className="min-w-0">
+          <h1 className="text-xl md:text-2xl font-bold text-ink-100">简历生成</h1>
+          <p className="text-xs md:text-sm text-ink-500 mt-1">粘贴 JD → AI 拆解 → 基于你的经历池生成专属简历</p>
         </div>
-        <button className="btn-ghost text-xs" onClick={() => setHistoryOpen(!historyOpen)}>
+        <button className="btn-ghost text-xs shrink-0" onClick={() => setHistoryOpen(!historyOpen)}>
           历史 ({resumes.length})
         </button>
       </div>
@@ -211,15 +211,15 @@ ${e.description ? '描述: ' + e.description : ''}
                 <div className="text-sm text-ink-100 truncate">{r.jobTitle} @ {r.company}</div>
                 <div className="text-[10px] text-ink-500">{relativeTime(r.updatedAt)} {r.matchScore != null && `· ${r.matchScore}分`}</div>
               </button>
-              <button className="opacity-0 group-hover:opacity-100 text-red-400 text-xs px-2" onClick={() => remove(r.id)}>删除</button>
+              <button className="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-red-400 text-xs px-2 shrink-0" onClick={() => remove(r.id)}>删除</button>
             </div>
           ))}
         </div>
       )}
 
       {/* 输入区 */}
-      <div className="card p-5 space-y-3">
-        <div className="grid grid-cols-2 gap-3">
+      <div className="card p-4 md:p-5 space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="label">目标岗位</label>
             <input className="input" value={jobTitle} onChange={e => setJobTitle(e.target.value)} placeholder="如：高级前端工程师" />
@@ -262,10 +262,10 @@ ${e.description ? '描述: ' + e.description : ''}
           )}
           {step === 'done' && (
             <>
-              <button className="btn-outline" onClick={() => copyToClipboard(streamingMd)}>📋 复制 Markdown</button>
-              <button className="btn-outline" onClick={() => downloadText(`${company || 'resume'}-${jobTitle}.md`, streamingMd, 'text/markdown')}>⬇ 下载 .md</button>
-              <button className="btn-ghost" onClick={() => window.print()}>🖨 打印/PDF</button>
-              <button className="btn-ghost" onClick={() => { setStep('input'); setAnalysis(null); setStreamingMd(''); setSavedId(null); nav('/resume'); }}>+ 新建</button>
+              <button className="btn-outline text-xs" onClick={() => copyToClipboard(streamingMd)}>📋 复制 Markdown</button>
+              <button className="btn-outline text-xs" onClick={() => downloadText(`${company || 'resume'}-${jobTitle}.md`, streamingMd, 'text/markdown')}>⬇ 下载 .md</button>
+              <button className="btn-ghost text-xs" onClick={() => window.print()}>🖨 打印/PDF</button>
+              <button className="btn-ghost text-xs" onClick={() => { setStep('input'); setAnalysis(null); setStreamingMd(''); setSavedId(null); nav('/resume'); }}>+ 新建</button>
             </>
           )}
         </div>
@@ -282,11 +282,11 @@ ${e.description ? '描述: ' + e.description : ''}
 
       {/* JD 拆解结果 */}
       {analysis && (step === 'analyzed' || step === 'generating' || step === 'done') && (
-        <div className="card p-5">
+        <div className="card p-4 md:p-5">
           <h3 className="text-sm font-semibold text-ink-100 mb-3 flex items-center gap-2">
             <span className="text-accent">◉</span> JD 拆解
           </h3>
-          <div className="grid md:grid-cols-2 gap-4 text-xs">
+          <div className="grid sm:grid-cols-2 gap-4 text-xs">
             <AnalysisSection title="关键技能词" items={analysis.keywords} variant="accent" />
             <AnalysisSection title="核心职责" items={analysis.responsibilities} />
             <AnalysisSection title="硬性要求" items={analysis.requirements} />
@@ -301,7 +301,7 @@ ${e.description ? '描述: ' + e.description : ''}
 
       {/* 简历预览 */}
       {(step === 'generating' || step === 'done') && (
-        <div className="card p-5">
+        <div className="card p-4 md:p-5">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-ink-100 flex items-center gap-2">
               <span className="text-accent">✦</span>

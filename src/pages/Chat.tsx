@@ -27,6 +27,7 @@ export default function Chat() {
   const [resumeId, setResumeId] = useState('');
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const load = async () => {
     const [s, r] = await Promise.all([listChats(), listResumes()]);
@@ -45,6 +46,7 @@ export default function Chat() {
     const s = await saveChat({ title: '新对话 ' + relativeTime(Date.now()) });
     setCurrent(s);
     setSessions(await listChats());
+    setDrawerOpen(false);
   };
 
   const remove = async (id: string) => {
@@ -52,6 +54,11 @@ export default function Chat() {
     await deleteChat(id);
     if (current?.id === id) setCurrent(null);
     setSessions(await listChats());
+  };
+
+  const pickSession = (s: ChatSession) => {
+    setCurrent(s);
+    setDrawerOpen(false);
   };
 
   const send = async (text?: string) => {
@@ -137,9 +144,9 @@ export default function Chat() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-3rem)] md:h-[calc(100vh-4rem)] -m-5 md:-m-8">
-      {/* 会话列表 */}
-      <aside className="w-56 shrink-0 border-r border-ink-800 flex flex-col bg-ink-900/50">
+    <div className="flex h-[calc(100vh-7rem)] md:h-[calc(100vh-4rem)] -m-4 md:-m-8">
+      {/* 桌面会话列表 */}
+      <aside className="w-56 shrink-0 border-r border-ink-800 flex-col bg-ink-900/50 hidden md:flex">
         <div className="p-3">
           <button className="btn-primary w-full text-xs" onClick={newSession}>+ 新对话</button>
         </div>
@@ -149,7 +156,7 @@ export default function Chat() {
           ) : sessions.map(s => (
             <button
               key={s.id}
-              onClick={() => setCurrent(s)}
+              onClick={() => pickSession(s)}
               className={cn(
                 'w-full text-left px-2 py-2 rounded-lg text-xs transition-colors group',
                 current?.id === s.id ? 'bg-accent/10 text-accent' : 'text-ink-400 hover:bg-ink-700/50'
@@ -172,15 +179,22 @@ export default function Chat() {
       <div className="flex-1 flex flex-col min-w-0">
         {/* 顶栏 */}
         <div className="border-b border-ink-800 p-3 flex items-center gap-2">
+          <button
+            className="md:hidden btn-ghost text-xs px-2 py-1 shrink-0"
+            onClick={() => setDrawerOpen(true)}
+            aria-label="会话列表"
+          >
+            ☰
+          </button>
           <div className="flex-1 min-w-0">
             <div className="text-sm font-medium text-ink-100 truncate">
               {current?.title ?? '求职助手'}
             </div>
-            <div className="text-[10px] text-ink-500">AI 求职教练 · 流式响应</div>
+            <div className="text-[10px] text-ink-500 hidden sm:block">AI 求职教练 · 流式响应</div>
           </div>
           {resumes.length > 0 && (
             <select
-              className="input text-xs w-40"
+              className="input text-xs w-28 sm:w-40 shrink-0"
               value={resumeId}
               onChange={e => setResumeId(e.target.value)}
             >
@@ -191,13 +205,13 @@ export default function Chat() {
         </div>
 
         {/* 消息流 */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3">
           {!current?.messages.length && !streaming && (
-            <div className="h-full flex flex-col items-center justify-center text-center">
+            <div className="h-full flex flex-col items-center justify-center text-center px-4">
               <div className="text-5xl mb-3">✧</div>
               <h3 className="text-lg font-semibold text-ink-100 mb-1">求职教练已就绪</h3>
               <p className="text-xs text-ink-500 mb-5">选一个建议问题，或直接问我任何求职相关问题</p>
-              <div className="grid gap-2 max-w-md">
+              <div className="grid gap-2 max-w-md w-full">
                 {SUGGESTIONS.map(s => (
                   <button
                     key={s}
@@ -227,10 +241,10 @@ export default function Chat() {
         </div>
 
         {/* 输入框 */}
-        <div className="border-t border-ink-800 p-3">
+        <div className="border-t border-ink-800 p-3" style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}>
           <div className="flex gap-2 items-end">
             <textarea
-              className="input flex-1 resize-none text-sm"
+              className="input flex-1 resize-none text-base md:text-sm"
               rows={2}
               value={input}
               onChange={e => setInput(e.target.value)}
@@ -240,19 +254,63 @@ export default function Chat() {
                   send();
                 }
               }}
-              placeholder="输入求职相关问题，Enter 发送，Shift+Enter 换行"
+              placeholder="输入求职相关问题，Enter 发送"
               disabled={streaming}
             />
             {streaming ? (
-              <button className="btn-outline text-xs" onClick={stop}>⏹ 停止</button>
+              <button className="btn-outline text-xs shrink-0" onClick={stop}>⏹</button>
             ) : (
-              <button className="btn-primary text-xs" onClick={() => send()} disabled={!input.trim()}>
+              <button className="btn-primary text-xs shrink-0" onClick={() => send()} disabled={!input.trim()}>
                 发送 →
               </button>
             )}
           </div>
         </div>
       </div>
+
+      {/* 移动端会话抽屉 */}
+      {drawerOpen && (
+        <div
+          className="md:hidden fixed inset-0 z-40 bg-ink-900/80 backdrop-blur-sm"
+          onClick={() => setDrawerOpen(false)}
+        >
+          <aside
+            className="absolute left-0 top-0 bottom-0 w-72 max-w-[80vw] bg-ink-800 border-r border-ink-700 flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-3 flex items-center justify-between border-b border-ink-700">
+              <span className="text-sm font-semibold text-ink-100">会话</span>
+              <button className="btn-ghost text-xs px-2 py-1" onClick={() => setDrawerOpen(false)}>✕</button>
+            </div>
+            <div className="p-3">
+              <button className="btn-primary w-full text-xs" onClick={newSession}>+ 新对话</button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-2 pb-2 space-y-1">
+              {sessions.length === 0 ? (
+                <div className="text-xs text-ink-600 text-center py-4">暂无对话</div>
+              ) : sessions.map(s => (
+                <button
+                  key={s.id}
+                  onClick={() => pickSession(s)}
+                  className={cn(
+                    'w-full text-left px-2 py-2 rounded-lg text-xs transition-colors group',
+                    current?.id === s.id ? 'bg-accent/10 text-accent' : 'text-ink-400 hover:bg-ink-700/50'
+                  )}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="truncate flex-1">{s.title}</span>
+                    <span
+                      className="text-red-400 px-1 shrink-0"
+                      onClick={(e) => { e.stopPropagation(); remove(s.id); }}
+                    >✕</span>
+                  </div>
+                  <div className="text-[10px] text-ink-600">{relativeTime(s.updatedAt)}</div>
+                </button>
+              ))}
+            </div>
+          </aside>
+        </div>
+      )}
     </div>
   );
 }

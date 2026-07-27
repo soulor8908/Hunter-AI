@@ -122,11 +122,11 @@ export default function Interview() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold text-ink-100">面试准备</h1>
-        <p className="text-sm text-ink-500 mt-1">基于 JD + 简历生成专属面试题清单、STAR 故事和反问</p>
+        <h1 className="text-xl md:text-2xl font-bold text-ink-100">面试准备</h1>
+        <p className="text-xs md:text-sm text-ink-500 mt-1">基于 JD + 简历生成专属面试题清单、STAR 故事和反问</p>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-5">
+      <div className="grid md:grid-cols-3 gap-4 md:gap-5">
         {/* 左：表单 + 历史 */}
         <div className="md:col-span-1 space-y-4">
           <div className="card p-4 space-y-3">
@@ -165,7 +165,7 @@ export default function Interview() {
                       <div className="text-xs text-ink-100 truncate">{p.jobTitle} @ {p.company}</div>
                       <div className="text-[10px] text-ink-500">{p.questions.length} 题 · {relativeTime(p.updatedAt)}</div>
                     </button>
-                    <button className="opacity-0 group-hover:opacity-100 text-red-400 text-xs px-2" onClick={() => remove(p.id)}>✕</button>
+                    <button className="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-red-400 text-xs px-2 shrink-0" onClick={() => remove(p.id)}>✕</button>
                   </div>
                 ))}
               </div>

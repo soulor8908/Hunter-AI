@@ -60,29 +60,29 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       {/* Hero */}
-      <div className="card p-6 relative overflow-hidden">
+      <div className="card p-5 md:p-6 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-accent/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
         <div className="relative">
           <div className="flex items-center gap-2 text-xs text-accent mb-2 font-mono">
             <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
             HUNTER OS · LOCAL FIRST
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold text-ink-100 mb-2">
+          <h1 className="text-xl md:text-3xl font-bold text-ink-100 mb-2">
             {profile?.name ? `你好，${profile.name}` : '欢迎，开始你的求职 Agent'}
           </h1>
-          <p className="text-ink-400 text-sm max-w-2xl">
+          <p className="text-ink-400 text-xs md:text-sm max-w-2xl">
             粘贴 JD → 一键生成专属简历 → 拆解面试题 → 追踪投递。所有数据存浏览器，不上云。
           </p>
           <div className="flex flex-wrap gap-2 mt-4">
-            <Link to="/resume" className="btn-primary">
+            <Link to="/resume" className="btn-primary text-xs md:text-sm">
               ✦ 粘贴 JD 生成简历
             </Link>
             {!profile?.name && (
-              <Link to="/profile" className="btn-outline">
+              <Link to="/profile" className="btn-outline text-xs md:text-sm">
                 ◉ 先建立职业档案
               </Link>
             )}
-            <Link to="/chat" className="btn-ghost">
+            <Link to="/chat" className="btn-ghost text-xs md:text-sm">
               ✧ 与 AI 求职教练对话
             </Link>
           </div>
@@ -91,15 +91,15 @@ export default function Dashboard() {
 
       {/* AI 配置状态 */}
       {!aiSettings?.apiKey && aiSettings?.provider !== 'trial' && (
-        <div className="card p-4 border-amber-500/30 bg-amber-500/5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-amber-400 text-lg">⚠</span>
-            <div>
+        <div className="card p-4 border-amber-500/30 bg-amber-500/5 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="text-amber-400 text-lg shrink-0">⚠</span>
+            <div className="min-w-0">
               <div className="text-sm text-ink-100 font-medium">未配置 AI</div>
               <div className="text-xs text-ink-400">使用 Trial 模式（每日配额）或填写自己的 API Key</div>
             </div>
           </div>
-          <Link to="/settings" className="btn-outline text-xs">前往设置</Link>
+          <Link to="/settings" className="btn-outline text-xs shrink-0">前往设置</Link>
         </div>
       )}
 

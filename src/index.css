@@ -10,12 +10,21 @@ html, body, #root {
   height: 100%;
 }
 
+html {
+  /* 防止 iOS 输入框聚焦时自动缩放：根字号 ≥16px */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   @apply bg-ink-900 text-ink-300 font-sans antialiased;
   background-image:
     radial-gradient(circle at 15% 20%, rgba(16, 185, 129, 0.06), transparent 40%),
     radial-gradient(circle at 85% 80%, rgba(59, 130, 246, 0.04), transparent 40%);
   background-attachment: fixed;
+  /* 横向滚动平滑 */
+  scroll-behavior: smooth;
+  overscroll-behavior-y: none;
 }
 
 /* 滚动条 */
@@ -23,6 +32,12 @@ body {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { @apply bg-ink-700 rounded-full; }
 ::-webkit-scrollbar-thumb:hover { @apply bg-ink-600; }
+
+/* 移动端隐藏水平滚动条（看板） */
+@media (max-width: 767px) {
+  .scrollbar-none::-webkit-scrollbar { display: none; }
+  .scrollbar-none { scrollbar-width: none; }
+}
 
 /* 通用组件 */
 @layer components {
@@ -46,9 +61,12 @@ body {
   }
   .input {
     @apply w-full bg-ink-900/60 border border-ink-700 rounded-lg px-3 py-2 text-ink-100 placeholder:text-ink-500 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors;
+    /* iOS：input 字号 ≥16px 防止聚焦自动缩放 */
+    font-size: 16px;
   }
   .textarea {
     @apply input font-mono text-sm resize-y min-h-[120px];
+    font-size: 16px;
   }
   .label {
     @apply block text-sm font-medium text-ink-400 mb-1.5;
@@ -65,6 +83,11 @@ body {
   .nav-item-active {
     @apply nav-item text-accent bg-accent/10;
   }
+}
+
+/* 桌面端恢复较小字号（防止 iOS 缩放只在移动端是问题） */
+@media (min-width: 768px) {
+  .input, .textarea { font-size: 0.875rem; }
 }
 
 /* Markdown 渲染 */
@@ -88,3 +111,13 @@ body {
   content: '▊';
   @apply text-accent animate-pulse ml-0.5;
 }
+
+/* 打印样式：仅打印简历内容 */
+@media print {
+  body { background: white !important; }
+  aside, header, nav { display: none !important; }
+  .card { border: none !important; background: white !important; box-shadow: none !important; }
+  .prose-resume { color: black !important; }
+  .prose-resume h1, .prose-resume h2, .prose-resume h3, .prose-resume strong { color: black !important; }
+}
+

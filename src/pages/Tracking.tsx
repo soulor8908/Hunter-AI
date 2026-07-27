@@ -60,28 +60,28 @@ export default function Tracking() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-ink-100">投递追踪</h1>
-          <p className="text-sm text-ink-500 mt-1">看板视图 · 每次状态变更都是一次学习</p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl md:text-2xl font-bold text-ink-100">投递追踪</h1>
+          <p className="text-xs md:text-sm text-ink-500 mt-1">看板视图 · 每次状态变更都是一次学习</p>
         </div>
-        <button className="btn-primary text-xs" onClick={() => { setEditing(null); setShowForm(true); }}>
-          + 新增投递
+        <button className="btn-primary text-xs shrink-0" onClick={() => { setEditing(null); setShowForm(true); }}>
+          + 新增
         </button>
       </div>
 
       {/* 统计条 */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
         <StatCard label="总投递" value={stats.total} color="text-ink-100" />
         <StatCard label="进行中" value={stats.active} color="text-blue-400" />
         <StatCard label="Offer" value={stats.offer} color="text-accent" />
         <StatCard label="成功率" value={`${stats.rate}%`} color="text-accent-glow" />
       </div>
 
-      {/* 看板 */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2 overflow-x-auto pb-2">
+      {/* 看板 — 移动端横向滚动，桌面端网格 */}
+      <div className="flex md:grid md:grid-cols-4 lg:grid-cols-7 gap-2 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0 snap-x snap-mandatory">
         {grouped.map(col => (
-          <div key={col.key} className="min-w-[160px]">
+          <div key={col.key} className="min-w-[75vw] sm:min-w-[220px] md:min-w-0 snap-start shrink-0 md:shrink">
             <div className="flex items-center justify-between mb-2 px-1">
               <div className="flex items-center gap-1.5">
                 <span className={cn('w-1.5 h-1.5 rounded-full', col.dot)} />
@@ -89,7 +89,7 @@ export default function Tracking() {
               </div>
               <span className="text-[10px] text-ink-500">{col.items.length}</span>
             </div>
-            <div className={cn('space-y-1.5 border-t-2 pt-2', col.border)}>
+            <div className={cn('space-y-1.5 border-t-2 pt-2 min-h-[60px]', col.border)}>
               {col.items.length === 0 ? (
                 <div className="text-[10px] text-ink-600 text-center py-4">—</div>
               ) : col.items.map(a => (
@@ -100,9 +100,10 @@ export default function Tracking() {
                     <div className="text-[10px] text-amber-400 mt-1 truncate">→ {a.nextAction}</div>
                   )}
                   <div className="text-[9px] text-ink-600 mt-1">{relativeTime(a.updatedAt)}</div>
-                  <div className="opacity-0 group-hover:opacity-100 flex gap-1 mt-1.5 transition-opacity">
+                  {/* 移动端常显，桌面端 hover 显示 */}
+                  <div className="flex gap-1 mt-1.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                     <select
-                      className="text-[10px] bg-ink-700 border border-ink-600 rounded px-1 py-0.5 text-ink-300"
+                      className="text-[10px] bg-ink-700 border border-ink-600 rounded px-1 py-0.5 text-ink-300 min-h-[24px]"
                       value={a.stage}
                       onClick={e => e.stopPropagation()}
                       onChange={e => moveStage(a.id, e.target.value as ApplicationStage)}
@@ -110,7 +111,7 @@ export default function Tracking() {
                       {STAGES.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
                     </select>
                     <button
-                      className="text-[10px] text-red-400 px-1"
+                      className="text-[10px] text-red-400 px-1.5 py-0.5 min-h-[24px]"
                       onClick={(e) => { e.stopPropagation(); remove(a.id); }}
                     >✕</button>
                   </div>
@@ -174,14 +175,14 @@ function AppForm({ initial, resumes, onClose, onSaved }: {
   };
 
   return (
-    <div className="fixed inset-0 bg-ink-900/80 backdrop-blur z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="card p-5 max-w-xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-ink-900/80 backdrop-blur z-50 flex items-end md:items-center justify-center p-0 md:p-4" onClick={onClose}>
+      <div className="card p-5 max-w-xl w-full max-h-[90vh] overflow-y-auto rounded-t-2xl md:rounded-xl" onClick={e => e.stopPropagation()} style={{ paddingBottom: 'calc(1.25rem + env(safe-area-inset-bottom))' }}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base font-semibold text-ink-100">{initial ? '编辑投递' : '新增投递'}</h3>
           <button className="btn-ghost text-xs" onClick={onClose}>✕</button>
         </div>
         <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="label">公司 *</label>
               <input className="input" value={form.company ?? ''} onChange={e => setForm({ ...form, company: e.target.value })} />
@@ -191,7 +192,7 @@ function AppForm({ initial, resumes, onClose, onSaved }: {
               <input className="input" value={form.jobTitle ?? ''} onChange={e => setForm({ ...form, jobTitle: e.target.value })} />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="label">当前阶段</label>
               <select className="input" value={form.stage} onChange={e => setForm({ ...form, stage: e.target.value as ApplicationStage })}>
@@ -210,7 +211,7 @@ function AppForm({ initial, resumes, onClose, onSaved }: {
               {resumes.map(r => <option key={r.id} value={r.id}>{r.jobTitle} @ {r.company}</option>)}
             </select>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="label">下一步动作</label>
               <input className="input" value={form.nextAction ?? ''} onChange={e => setForm({ ...form, nextAction: e.target.value })} placeholder="如：周三前发送作品集" />

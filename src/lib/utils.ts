@@ -65,7 +65,7 @@ export function downloadText(filename: string, content: string, mime = 'text/pla
  */
 export function toast(msg: string, type: 'info' | 'success' | 'error' = 'info'): void {
   const el = document.createElement('div');
-  el.className = `fixed bottom-6 right-6 z-50 px-4 py-2 rounded-lg shadow-lg text-sm font-medium animate-glow ${
+  el.className = `fixed left-4 right-4 md:left-auto md:right-6 bottom-24 md:bottom-6 z-[60] px-4 py-2.5 rounded-lg shadow-lg text-sm font-medium animate-glow max-w-sm mx-auto md:mx-0 ${
     type === 'success' ? 'bg-accent text-ink-900' :
     type === 'error' ? 'bg-red-500 text-white' :
     'bg-ink-700 text-ink-300 border border-ink-600'

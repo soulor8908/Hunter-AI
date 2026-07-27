@@ -98,12 +98,12 @@ export default function Profile() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-ink-100">职业档案</h1>
-          <p className="text-sm text-ink-500 mt-1">长期维护的个人上下文，AI 据此生成针对性简历</p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl md:text-2xl font-bold text-ink-100">职业档案</h1>
+          <p className="text-xs md:text-sm text-ink-500 mt-1">长期维护的个人上下文，AI 据此生成针对性简历</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 shrink-0">
           <button className="btn-ghost text-xs" onClick={onImport}>导入</button>
           <button className="btn-ghost text-xs" onClick={onExport}>导出</button>
         </div>
@@ -196,7 +196,7 @@ export default function Profile() {
                       </div>
                     )}
                   </div>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0">
                     <button className="btn-ghost text-xs px-2 py-1" onClick={() => startEdit(e)}>编辑</button>
                     <button className="btn-ghost text-xs px-2 py-1 text-red-400" onClick={() => remove(e.id)}>删除</button>
                   </div>
@@ -209,14 +209,14 @@ export default function Profile() {
 
       {/* 编辑弹层 */}
       {editing && (
-        <div className="fixed inset-0 bg-ink-900/80 backdrop-blur z-50 flex items-center justify-center p-4" onClick={() => setEditing(null)}>
-          <div className="card p-5 max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-ink-900/80 backdrop-blur z-50 flex items-end md:items-center justify-center p-0 md:p-4" onClick={() => setEditing(null)}>
+          <div className="card p-5 max-w-2xl w-full max-h-[90vh] overflow-y-auto rounded-t-2xl md:rounded-xl" onClick={e => e.stopPropagation()} style={{ paddingBottom: 'calc(1.25rem + env(safe-area-inset-bottom))' }}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-semibold text-ink-100">{editing.id ? '编辑经历' : '新增经历'}</h3>
               <button className="btn-ghost text-xs" onClick={() => setEditing(null)}>✕</button>
             </div>
             <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="label">类型</label>
                   <select
@@ -232,7 +232,7 @@ export default function Profile() {
                   <input className="input" value={editing.title} onChange={e => setEditing({ ...editing, title: e.target.value })} placeholder="如：高级前端工程师" />
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="label">组织</label>
                   <input className="input" value={editing.org} onChange={e => setEditing({ ...editing, org: e.target.value })} placeholder="公司/学校" />
@@ -308,7 +308,7 @@ function ProfileForm({ initial, onCancel, onSaved }: { initial: CareerProfile | 
 
   return (
     <div className="mt-4 pt-4 border-t border-ink-700 space-y-3">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className="label">姓名 *</label>
           <input className="input" value={form.name ?? ''} onChange={e => setForm({ ...form, name: e.target.value })} />
@@ -322,7 +322,7 @@ function ProfileForm({ initial, onCancel, onSaved }: { initial: CareerProfile | 
         <label className="label">自我介绍（长版，让 AI 更懂你）</label>
         <textarea className="textarea" value={form.summary ?? ''} onChange={e => setForm({ ...form, summary: e.target.value })} />
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className="label">目标岗位（逗号分隔）</label>
           <input className="input" value={rolesText} onChange={e => setRolesText(e.target.value)} placeholder="前端工程师, 全栈工程师" />
@@ -332,11 +332,11 @@ function ProfileForm({ initial, onCancel, onSaved }: { initial: CareerProfile | 
           <input className="input" value={citiesText} onChange={e => setCitiesText(e.target.value)} placeholder="北京, 上海, 远程" />
         </div>
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <div className="md:col-span-1">
-          <label className="label">期望薪资</label>
-          <input className="input" value={form.expectedSalary ?? ''} onChange={e => setForm({ ...form, expectedSalary: e.target.value })} placeholder="30-50k" />
-        </div>
+      <div>
+        <label className="label">期望薪资</label>
+        <input className="input" value={form.expectedSalary ?? ''} onChange={e => setForm({ ...form, expectedSalary: e.target.value })} placeholder="30-50k" />
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className="label">邮箱</label>
           <input className="input" value={form.contact?.email ?? ''} onChange={e => setForm({ ...form, contact: { ...form.contact, email: e.target.value } })} />
@@ -345,6 +345,8 @@ function ProfileForm({ initial, onCancel, onSaved }: { initial: CareerProfile | 
           <label className="label">电话</label>
           <input className="input" value={form.contact?.phone ?? ''} onChange={e => setForm({ ...form, contact: { ...form.contact, phone: e.target.value } })} />
         </div>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className="label">GitHub</label>
           <input className="input" value={form.contact?.github ?? ''} onChange={e => setForm({ ...form, contact: { ...form.contact, github: e.target.value } })} />
@@ -354,7 +356,7 @@ function ProfileForm({ initial, onCancel, onSaved }: { initial: CareerProfile | 
           <input className="input" value={form.contact?.website ?? ''} onChange={e => setForm({ ...form, contact: { ...form.contact, website: e.target.value } })} />
         </div>
       </div>
-      <div className="flex justify-end gap-2">
+      <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-2">
         <button className="btn-ghost" onClick={onCancel}>取消</button>
         <button className="btn-primary" onClick={save}>保存档案</button>
       </div>
