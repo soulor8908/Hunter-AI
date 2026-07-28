@@ -215,7 +215,7 @@ export default function Profile() {
           <div className="card p-5 max-w-2xl w-full max-h-[90vh] overflow-y-auto rounded-t-2xl md:rounded-xl" onClick={e => e.stopPropagation()} style={{ paddingBottom: 'calc(1.25rem + env(safe-area-inset-bottom))' }}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-semibold text-ink-100">{editing.id ? '编辑经历' : '新增经历'}</h3>
-              <button className="btn-ghost text-xs" onClick={() => setEditing(null)}>✕</button>
+              <button className="btn-ghost text-xs" onClick={() => setEditing(null)}><Icon name="close" size={14} /></button>
             </div>
             <div className="space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
