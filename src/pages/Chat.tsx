@@ -6,6 +6,7 @@ import { SYSTEM_PROMPT, CHAT_SYSTEM_WITH_CONTEXT, fill } from '@/lib/prompts';
 import { toast, cn, relativeTime } from '@/lib/utils';
 import type { ChatSession, ResumeVersion } from '@/types';
 import { nanoid } from 'nanoid';
+import Icon from '@/components/Icon';
 
 const SUGGESTIONS = [
   '帮我分析这份 JD 的核心考察点',
@@ -148,7 +149,7 @@ export default function Chat() {
       {/* 桌面会话列表 */}
       <aside className="w-56 shrink-0 border-r border-ink-800 flex-col bg-ink-900/50 hidden md:flex">
         <div className="p-3">
-          <button className="btn-primary w-full text-xs" onClick={newSession}>+ 新对话</button>
+          <button className="btn-primary w-full text-xs" onClick={newSession}><Icon name="plus" size={14} /> 新对话</button>
         </div>
         <div className="flex-1 overflow-y-auto px-2 pb-2 space-y-1">
           {sessions.length === 0 ? (
@@ -167,7 +168,7 @@ export default function Chat() {
                 <span
                   className="opacity-0 group-hover:opacity-100 text-red-400 px-1"
                   onClick={(e) => { e.stopPropagation(); remove(s.id); }}
-                >✕</span>
+                ><Icon name="close" size={14} /></span>
               </div>
               <div className="text-[10px] text-ink-600">{relativeTime(s.updatedAt)}</div>
             </button>
@@ -184,7 +185,7 @@ export default function Chat() {
             onClick={() => setDrawerOpen(true)}
             aria-label="会话列表"
           >
-            ☰
+            <Icon name="menu" size={18} />
           </button>
           <div className="flex-1 min-w-0">
             <div className="text-sm font-medium text-ink-100 truncate">
@@ -208,7 +209,7 @@ export default function Chat() {
         <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3">
           {!current?.messages.length && !streaming && (
             <div className="h-full flex flex-col items-center justify-center text-center px-4">
-              <div className="text-5xl mb-3">✧</div>
+              <div className="text-5xl mb-3"><Icon name="sparkles" size={32} /></div>
               <h3 className="text-lg font-semibold text-ink-100 mb-1">求职教练已就绪</h3>
               <p className="text-xs text-ink-500 mb-5">选一个建议问题，或直接问我任何求职相关问题</p>
               <div className="grid gap-2 max-w-md w-full">
@@ -235,7 +236,7 @@ export default function Chat() {
 
           {error && (
             <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-xs text-red-300">
-              ⚠ {error}
+              <Icon name="alert" size={14} /> {error}
             </div>
           )}
         </div>
@@ -258,10 +259,10 @@ export default function Chat() {
               disabled={streaming}
             />
             {streaming ? (
-              <button className="btn-outline text-xs shrink-0" onClick={stop}>⏹</button>
+              <button className="btn-outline text-xs shrink-0" onClick={stop}><Icon name="stop" size={14} /></button>
             ) : (
               <button className="btn-primary text-xs shrink-0" onClick={() => send()} disabled={!input.trim()}>
-                发送 →
+                发送 <Icon name="arrow-right" size={14} />
               </button>
             )}
           </div>
@@ -280,10 +281,10 @@ export default function Chat() {
           >
             <div className="p-3 flex items-center justify-between border-b border-ink-700">
               <span className="text-sm font-semibold text-ink-100">会话</span>
-              <button className="btn-ghost text-xs px-2 py-1" onClick={() => setDrawerOpen(false)}>✕</button>
+              <button className="btn-ghost text-xs px-2 py-1" onClick={() => setDrawerOpen(false)}><Icon name="close" size={14} /></button>
             </div>
             <div className="p-3">
-              <button className="btn-primary w-full text-xs" onClick={newSession}>+ 新对话</button>
+              <button className="btn-primary w-full text-xs" onClick={newSession}><Icon name="plus" size={14} /> 新对话</button>
             </div>
             <div className="flex-1 overflow-y-auto px-2 pb-2 space-y-1">
               {sessions.length === 0 ? (
@@ -302,7 +303,7 @@ export default function Chat() {
                     <span
                       className="text-red-400 px-1 shrink-0"
                       onClick={(e) => { e.stopPropagation(); remove(s.id); }}
-                    >✕</span>
+                    ><Icon name="close" size={14} /></span>
                   </div>
                   <div className="text-[10px] text-ink-600">{relativeTime(s.updatedAt)}</div>
                 </button>

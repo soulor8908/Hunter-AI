@@ -4,6 +4,7 @@ import { getAISettings, saveAISettings } from '@/lib/db';
 import { toast } from '@/lib/utils';
 import { exportAll } from '@/lib/db';
 import type { AIProvider } from '@/types';
+import Icon from '@/components/Icon';
 
 const PROVIDER_PRESET: Record<Exclude<AIProvider, 'trial'>, { label: string; model: string; baseUrl: string; help: string }> = {
   openai: { label: 'OpenAI', model: 'gpt-4o-mini', baseUrl: 'https://api.openai.com/v1', help: 'https://platform.openai.com/api-keys' },
@@ -94,7 +95,7 @@ export default function Settings() {
                   target="_blank"
                   rel="noopener"
                   className="ml-2 text-xs text-accent hover:underline"
-                >获取 Key →</a>
+                >获取 Key <Icon name="arrow-right" size={14} /></a>
               )}</label>
               <input
                 type="password"
@@ -139,7 +140,7 @@ export default function Settings() {
 
         {form.provider === 'trial' && (
           <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 text-xs text-amber-300">
-            ⚠ Trial 模式通过 Cloudflare Worker 代理调用 AI，按 IP 限制每日配额（默认 20 次/天）。
+            <Icon name="alert" size={14} /> Trial 模式通过 Cloudflare Worker 代理调用 AI，按 IP 限制每日配额（默认 20 次/天）。
             建议在试用后配置自己的 API Key 以解除限制。
           </div>
         )}
@@ -188,10 +189,10 @@ export default function Settings() {
         </div>
         <div className="text-[11px] text-ink-500">
           {form.provider === 'openai'
-            ? '✓ OpenAI 默认支持 embedding，留空即可'
+            ? (<><Icon name="check" size={14} /> OpenAI 默认支持 embedding，留空即可</>)
             : form.provider === 'trial'
-            ? '✓ Trial 模式自动走 Worker 代理（共享池需 Worker 配置 Vectorize）'
-            : '⚠ 当前 chat provider 不支持 embedding，请填 OpenAI 兼容端点，或切 Trial 模式'}
+            ? (<><Icon name="check" size={14} /> Trial 模式自动走 Worker 代理（共享池需 Worker 配置 Vectorize）</>)
+            : (<><Icon name="alert" size={14} /> 当前 chat provider 不支持 embedding，请填 OpenAI 兼容端点，或切 Trial 模式</>)}
         </div>
         <button className="btn-outline w-full text-xs" onClick={save} disabled={saving}>
           保存 Embedding 配置
@@ -219,7 +220,7 @@ export default function Settings() {
               toast('已导出', 'success');
             }}
           >
-            📤 导出全部数据
+            <Icon name="upload" size={14} /> 导出全部数据
           </button>
           <button
             className="btn-outline"
@@ -230,7 +231,7 @@ export default function Settings() {
               setTimeout(() => window.location.reload(), 800);
             }}
           >
-            🗑 清除本地数据
+            <Icon name="trash" size={14} /> 清除本地数据
           </button>
         </div>
       </div>

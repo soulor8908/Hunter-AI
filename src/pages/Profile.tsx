@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { getProfile, listExperiences, saveExperience, deleteExperience, exportAll, importAll, saveProfile } from '@/lib/db';
 import { toast, downloadText, cn } from '@/lib/utils';
 import SkillInput from '@/components/SkillInput';
+import Icon from '@/components/Icon';
 import type { CareerProfile, Experience } from '@/types';
 
 const TYPE_LABEL: Record<Experience['type'], string> = {
@@ -126,7 +127,7 @@ export default function Profile() {
             {profile.summary && <p className="text-sm text-ink-400 mb-3 whitespace-pre-wrap">{profile.summary}</p>}
             <div className="flex flex-wrap gap-2 text-xs">
               {profile.targetRoles.map(r => <span key={r} className="chip-accent">{r}</span>)}
-              {profile.targetCities.map(c => <span key={c} className="chip">📍 {c}</span>)}
+              {profile.targetCities.map(c => <span key={c} className="chip"><Icon name="map-pin" size={14} /> {c}</span>)}
               {profile.expectedSalary && <span className="chip">💰 {profile.expectedSalary}</span>}
             </div>
             {(profile.contact.email || profile.contact.github || profile.contact.website) && (
@@ -141,7 +142,7 @@ export default function Profile() {
           </>
         ) : (
           <div className="text-center py-6">
-            <div className="text-4xl mb-2">◉</div>
+            <div className="text-4xl mb-2"><Icon name="profile" size={32} /></div>
             <p className="text-ink-400 text-sm mb-3">还没有建立职业档案</p>
             <button className="btn-primary" onClick={() => setShowProfileForm(true)}>立即创建</button>
           </div>
@@ -163,7 +164,7 @@ export default function Profile() {
           <div className="flex gap-1.5 flex-wrap">
             {(['work', 'education', 'project', 'skill', 'award'] as const).map(t => (
               <button key={t} className="btn-outline text-xs px-2 py-1" onClick={() => startNew(t)}>
-                + {TYPE_LABEL[t]}
+                <Icon name="plus" size={14} /> {TYPE_LABEL[t]}
               </button>
             ))}
           </div>
