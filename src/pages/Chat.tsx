@@ -29,6 +29,7 @@ export default function Chat() {
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const load = async () => {
     const [s, r] = await Promise.all([listChats(), listResumes()]);
@@ -48,6 +49,7 @@ export default function Chat() {
     setCurrent(s);
     setSessions(await listChats());
     setDrawerOpen(false);
+    setSidebarOpen(true);
   };
 
   const remove = async (id: string) => {
@@ -60,6 +62,7 @@ export default function Chat() {
   const pickSession = (s: ChatSession) => {
     setCurrent(s);
     setDrawerOpen(false);
+    setSidebarOpen(false);
   };
 
   const send = async (text?: string) => {
@@ -146,34 +149,90 @@ export default function Chat() {
 
   return (
     <div className="flex h-[calc(100vh-7rem)] md:h-[calc(100vh-4rem)] -m-4 md:-m-8">
-      {/* 桌面会话列表 */}
-      <aside className="w-56 shrink-0 border-r border-ink-800 flex-col bg-ink-900/50 hidden md:flex">
-        <div className="p-3">
-          <button className="btn-primary w-full text-xs" onClick={newSession}><Icon name="plus" size={14} /> 新对话</button>
+      {/* 桌面会话列表 - 可折叠 */}
+      <aside
+        className={`shrink-0 border-r border-ink-800 hidden md:flex flex-col bg-ink-900/50 transition-all duration-200 ${sidebarOpen ? 'w-56' : 'w-12'}`}
+      >
+        <div className={`p-2 flex ${sidebarOpen ? 'justify-between' : 'justify-center'} items-center border-b border-ink-800`}>
+          {sidebarOpen ? (
+            <>
+              <button
+                className="btn-primary flex-1 text-xs py-1.5 px-2"
+                onClick={newSession}
+                title="新对话"
+              >
+                <Icon name="plus" size={12} /> 新对话
+              </button>
+              <button
+                className="btn-ghost p-1.5 ml-1 shrink-0"
+                onClick={() => setSidebarOpen(false)}
+                aria-label="折叠"
+                title="折叠"
+              >
+                <Icon name="chevron-right" size={14} className="rotate-180" />
+              </button>
+            </>
+          ) : (
+            <button
+              className="w-8 h-8 flex items-center justify-center rounded-lg border border-ink-700 text-ink-300 hover:border-accent hover:text-accent transition-colors"
+              onClick={newSession}
+              aria-label="新对话"
+              title="新对话"
+            >
+              <Icon name="plus" size={16} />
+            </button>
+          )}
         </div>
-        <div className="flex-1 overflow-y-auto px-2 pb-2 space-y-1">
+
+        <div className="flex-1 overflow-y-auto px-1.5 py-2 space-y-1">
           {sessions.length === 0 ? (
-            <div className="text-xs text-ink-600 text-center py-4">暂无对话</div>
+            sidebarOpen && <div className="text-xs text-ink-600 text-center py-4">暂无对话</div>
           ) : sessions.map(s => (
             <button
               key={s.id}
               onClick={() => pickSession(s)}
+              title={sidebarOpen ? undefined : s.title}
               className={cn(
-                'w-full text-left px-2 py-2 rounded-lg text-xs transition-colors group',
+                'w-full transition-colors group relative',
+                sidebarOpen
+                  ? 'text-left px-2 py-2 rounded-lg text-xs'
+                  : 'flex items-center justify-center h-9 rounded-lg text-xs font-medium',
                 current?.id === s.id ? 'bg-accent/10 text-accent' : 'text-ink-400 hover:bg-ink-700/50'
               )}
             >
-              <div className="flex items-center justify-between">
-                <span className="truncate flex-1">{s.title}</span>
-                <span
-                  className="opacity-0 group-hover:opacity-100 text-red-400 px-1"
-                  onClick={(e) => { e.stopPropagation(); remove(s.id); }}
-                ><Icon name="close" size={14} /></span>
-              </div>
-              <div className="text-[10px] text-ink-600">{relativeTime(s.updatedAt)}</div>
+              {sidebarOpen ? (
+                <>
+                  <div className="flex items-center justify-between">
+                    <span className="truncate flex-1">{s.title}</span>
+                    <span
+                      className="opacity-0 group-hover:opacity-100 text-red-400 px-1 shrink-0"
+                      onClick={(e) => { e.stopPropagation(); remove(s.id); }}
+                    ><Icon name="close" size={14} /></span>
+                  </div>
+                  <div className="text-[10px] text-ink-600">{relativeTime(s.updatedAt)}</div>
+                </>
+              ) : (
+                <span>{s.title.charAt(0) || '?'}</span>
+              )}
+              {!sidebarOpen && current?.id === s.id && (
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r bg-accent" />
+              )}
             </button>
           ))}
         </div>
+
+        {!sidebarOpen && (
+          <div className="p-1.5 border-t border-ink-800">
+            <button
+              className="w-full h-8 flex items-center justify-center rounded-lg text-ink-400 hover:text-accent hover:bg-ink-700/50 transition-colors"
+              onClick={() => setSidebarOpen(true)}
+              aria-label="展开"
+              title="展开历史记录"
+            >
+              <Icon name="chevron-right" size={14} />
+            </button>
+          </div>
+        )}
       </aside>
 
       {/* 主对话区 */}

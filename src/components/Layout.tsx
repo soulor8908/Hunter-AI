@@ -23,18 +23,15 @@ const NAV: NavItem[] = [
 
 // 移动端底部 Tab：5 个核心入口（拇指可达）
 const MOBILE_PRIMARY: string[] = ['/', '/jobs', '/resume', '/tracking', '/chat'];
-// 溢出菜单：档案 + 面试 + 设置
-const MOBILE_OVERFLOW: string[] = ['/profile', '/interview', '/settings'];
 
 export default function Layout({ children }: { children: ReactNode }) {
   const loc = useLocation();
   const nav = useNavigate();
-  const [overflowOpen, setOverflowOpen] = useState(false);
+  const [navMapOpen, setNavMapOpen] = useState(false);
   const current = NAV.find((n) => n.to === loc.pathname) ?? NAV[0];
-  const activeOverflow = MOBILE_OVERFLOW.includes(loc.pathname);
 
   const go = (to: string) => {
-    setOverflowOpen(false);
+    setNavMapOpen(false);
     nav(to);
   };
 
@@ -84,28 +81,26 @@ export default function Layout({ children }: { children: ReactNode }) {
       {/* 主内容 */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* 移动端顶栏 */}
-        <header className="md:hidden sticky top-0 z-30 bg-ink-900/95 backdrop-blur border-b border-ink-800 px-4 py-3 flex items-center justify-between" style={{ paddingTop: 'calc(0.75rem + env(safe-area-inset-top))' }}>
-          <div className="flex items-center gap-2 min-w-0">
+        <header
+          className="md:hidden sticky top-0 z-30 bg-ink-900/95 backdrop-blur border-b border-ink-800 px-3 py-3 flex items-center gap-2"
+          style={{ paddingTop: 'calc(0.75rem + env(safe-area-inset-top))' }}
+        >
+          <button
+            onClick={() => setNavMapOpen(true)}
+            className="w-9 h-9 flex items-center justify-center rounded-lg border border-ink-700 text-ink-300 shrink-0"
+            aria-label="导航地图"
+          >
+            <Icon name="menu" size={18} />
+          </button>
+          <div className="flex items-center gap-2 min-w-0 flex-1">
             <div className="w-7 h-7 rounded-md bg-accent/10 border border-accent/30 flex items-center justify-center text-accent font-bold text-sm shrink-0">
               H
             </div>
             <div className="min-w-0">
               <div className="font-bold text-ink-100 text-sm truncate">Hunter AI</div>
-              <div className="text-[10px] text-ink-500 truncate">{current.label}</div>
+              <div className="text-[10px] text-ink-500 truncate">{current.label} · {current.desc}</div>
             </div>
           </div>
-          <button
-            onClick={() => setOverflowOpen(true)}
-            className={cn(
-              'w-9 h-9 flex items-center justify-center rounded-lg border shrink-0',
-              activeOverflow
-                ? 'border-accent bg-accent/10 text-accent'
-                : 'border-ink-700 text-ink-300'
-            )}
-            aria-label="更多"
-          >
-            <Icon name="more" size={18} />
-          </button>
         </header>
 
         <main className="flex-1 p-4 md:p-8 max-w-6xl mx-auto w-full pb-24 md:pb-8">
@@ -138,44 +133,82 @@ export default function Layout({ children }: { children: ReactNode }) {
         })}
       </nav>
 
-      {/* 移动端溢出菜单（档案 / 面试 / 设置） */}
-      {overflowOpen && (
+      {/* 全屏导航地图 */}
+      {navMapOpen && (
         <div
-          className="md:hidden fixed inset-0 z-40 bg-ink-900/80 backdrop-blur-sm flex items-end"
-          onClick={() => setOverflowOpen(false)}
+          className="md:hidden fixed inset-0 z-50 bg-ink-900/95 backdrop-blur-sm flex flex-col"
+          onClick={() => setNavMapOpen(false)}
         >
           <div
-            className="w-full bg-ink-800 border-t border-ink-700 rounded-t-2xl p-4 space-y-1"
-            style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}
+            className="flex-1 flex flex-col p-4 overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
+            style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}
           >
-            <div className="text-[10px] text-ink-500 px-2 pb-2">更多</div>
-            {MOBILE_OVERFLOW.map((to) => {
-              const item = NAV.find((n) => n.to === to)!;
-              const active = loc.pathname === to;
-              return (
-                <button
-                  key={to}
-                  onClick={() => go(to)}
-                  className={cn(
-                    'w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm min-h-[44px]',
-                    active ? 'bg-accent/10 text-accent' : 'text-ink-300 hover:bg-ink-700/50'
-                  )}
-                >
-                  <Icon name={item.icon} size={18} />
-                  <div className="text-left">
-                    <div>{item.label}</div>
-                    <div className="text-[10px] text-ink-500">{item.desc}</div>
-                  </div>
-                </button>
-              );
-            })}
-            <button
-              onClick={() => setOverflowOpen(false)}
-              className="w-full text-center text-xs text-ink-500 py-2 mt-2"
-            >
-              关闭
-            </button>
+            {/* 顶栏 */}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-lg bg-accent/10 border border-accent/30 flex items-center justify-center text-accent font-bold">
+                  H
+                </div>
+                <div>
+                  <div className="text-base font-bold text-ink-100">Hunter AI</div>
+                  <div className="text-[10px] text-ink-500 tracking-wider">JOB HUNT OS · 站点地图</div>
+                </div>
+              </div>
+              <button
+                className="w-9 h-9 flex items-center justify-center rounded-lg border border-ink-700 text-ink-300"
+                onClick={() => setNavMapOpen(false)}
+                aria-label="关闭"
+              >
+                <Icon name="close" size={18} />
+              </button>
+            </div>
+
+            {/* 当前位置提示 */}
+            <div className="mb-4 px-3 py-2 rounded-lg bg-ink-800/60 border border-ink-700">
+              <div className="text-[10px] text-ink-500 mb-0.5">当前页面</div>
+              <div className="flex items-center gap-2">
+                <Icon name={current.icon} size={14} className="text-accent" />
+                <span className="text-sm font-medium text-accent">{current.label}</span>
+                <span className="text-[10px] text-ink-500">· {current.desc}</span>
+              </div>
+            </div>
+
+            {/* 全部页面网格 */}
+            <div className="text-[10px] text-ink-500 px-1 mb-2">全部页面</div>
+            <div className="grid grid-cols-2 gap-2.5">
+              {NAV.map((item) => {
+                const active = item.to === '/' ? loc.pathname === '/' : loc.pathname.startsWith(item.to);
+                return (
+                  <button
+                    key={item.to}
+                    onClick={() => go(item.to)}
+                    className={cn(
+                      'flex flex-col items-start justify-between p-3 rounded-xl border transition-all min-h-[88px] text-left',
+                      active
+                        ? 'border-accent bg-accent/10 text-ink-100'
+                        : 'border-ink-700 bg-ink-800/40 text-ink-300 hover:border-ink-600 hover:bg-ink-700/40'
+                    )}
+                  >
+                    <div className={cn('flex items-center justify-center w-9 h-9 rounded-lg mb-2', active ? 'bg-accent/20 text-accent' : 'bg-ink-700/60 text-ink-400')}>
+                      <Icon name={item.icon} size={18} />
+                    </div>
+                    <div className="w-full">
+                      <div className="flex items-center gap-1">
+                        <span className="text-sm font-medium truncate">{item.label}</span>
+                        {active && <Icon name="check" size={12} className="text-accent shrink-0" />}
+                      </div>
+                      <div className="text-[10px] text-ink-500 truncate">{item.desc}</div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* 底部说明 */}
+            <div className="mt-auto pt-6 pb-2 text-center text-[10px] text-ink-600">
+              底部 Tab 栏可快速切换 5 个核心页面
+            </div>
           </div>
         </div>
       )}
