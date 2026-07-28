@@ -4,7 +4,7 @@ import { getAISettings, saveAISettings } from '@/lib/db';
 import { toast } from '@/lib/utils';
 import { exportAll } from '@/lib/db';
 import type { AIProvider } from '@/types';
-import Icon from '@/components/Icon';
+import Icon, { type IconName } from '@/components/Icon';
 
 const PROVIDER_PRESET: Record<Exclude<AIProvider, 'trial'>, { label: string; model: string; baseUrl: string; help: string }> = {
   openai: { label: 'OpenAI', model: 'gpt-4o-mini', baseUrl: 'https://api.openai.com/v1', help: 'https://platform.openai.com/api-keys' },
@@ -72,7 +72,7 @@ export default function Settings() {
             onClick={() => switchProvider('trial')}
             label="Trial 模式"
             desc="免费配额"
-            icon="🎁"
+            icon="sparkles"
           />
           {Object.entries(PROVIDER_PRESET).map(([k, v]) => (
             <ProviderCard
@@ -81,7 +81,7 @@ export default function Settings() {
               onClick={() => switchProvider(k as AIProvider)}
               label={v.label}
               desc="自带 Key"
-              icon="🔑"
+              icon="settings"
             />
           ))}
         </div>
@@ -105,7 +105,7 @@ export default function Settings() {
                 placeholder="sk-..."
                 autoComplete="off"
               />
-              <p className="text-[11px] text-ink-500 mt-1">🔒 Key 仅存浏览器，调用时直接发往 AI 提供商，不经过任何中间服务器</p>
+              <p className="text-[11px] text-ink-500 mt-1"><Icon name="info" size={11} className="inline mr-1" />Key 仅存浏览器，调用时直接发往 AI 提供商，不经过任何中间服务器</p>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -249,7 +249,7 @@ export default function Settings() {
   );
 }
 
-function ProviderCard({ active, onClick, label, desc, icon }: { active: boolean; onClick: () => void; label: string; desc: string; icon: string }) {
+function ProviderCard({ active, onClick, label, desc, icon }: { active: boolean; onClick: () => void; label: string; desc: string; icon: IconName }) {
   return (
     <button
       onClick={onClick}
@@ -259,7 +259,7 @@ function ProviderCard({ active, onClick, label, desc, icon }: { active: boolean;
           : 'border-ink-700 bg-ink-900/40 text-ink-400 hover:border-ink-600'
       }`}
     >
-      <div className="text-lg mb-1">{icon}</div>
+      <div className="text-lg mb-1 text-accent"><Icon name={icon} size={18} /></div>
       <div className="text-xs font-medium">{label}</div>
       <div className="text-[10px] text-ink-500 mt-0.5">{desc}</div>
     </button>

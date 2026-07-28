@@ -128,15 +128,15 @@ export default function Profile() {
             <div className="flex flex-wrap gap-2 text-xs">
               {profile.targetRoles.map(r => <span key={r} className="chip-accent">{r}</span>)}
               {profile.targetCities.map(c => <span key={c} className="chip"><Icon name="map-pin" size={14} /> {c}</span>)}
-              {profile.expectedSalary && <span className="chip">💰 {profile.expectedSalary}</span>}
+              {profile.expectedSalary && <span className="chip"><Icon name="briefcase" size={14} /> {profile.expectedSalary}</span>}
             </div>
             {(profile.contact.email || profile.contact.github || profile.contact.website) && (
               <div className="mt-3 pt-3 border-t border-ink-700 flex flex-wrap gap-3 text-xs text-ink-500">
-                {profile.contact.email && <span>✉ {profile.contact.email}</span>}
-                {profile.contact.phone && <span>☎ {profile.contact.phone}</span>}
-                {profile.contact.github && <span>⌥ {profile.contact.github}</span>}
-                {profile.contact.website && <span>◈ {profile.contact.website}</span>}
-                {profile.contact.linkedin && <span>in {profile.contact.linkedin}</span>}
+                {profile.contact.email && <span className="inline-flex items-center gap-1"><Icon name="info" size={12} /> {profile.contact.email}</span>}
+                {profile.contact.phone && <span className="inline-flex items-center gap-1"><Icon name="info" size={12} /> {profile.contact.phone}</span>}
+                {profile.contact.github && <span className="inline-flex items-center gap-1"><Icon name="external-link" size={12} /> {profile.contact.github}</span>}
+                {profile.contact.website && <span className="inline-flex items-center gap-1"><Icon name="external-link" size={12} /> {profile.contact.website}</span>}
+                {profile.contact.linkedin && <span className="inline-flex items-center gap-1"><Icon name="external-link" size={12} /> {profile.contact.linkedin}</span>}
               </div>
             )}
           </>

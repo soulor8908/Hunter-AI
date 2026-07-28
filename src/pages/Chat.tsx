@@ -217,9 +217,10 @@ export default function Chat() {
                   <button
                     key={s}
                     onClick={() => send(s)}
-                    className="card-hover p-2.5 text-left text-xs text-ink-300 hover:text-accent"
+                    className="card-hover p-2.5 text-left text-xs text-ink-300 hover:text-accent flex items-start gap-1.5"
                   >
-                    💬 {s}
+                    <Icon name="chat" size={12} className="mt-0.5 shrink-0" />
+                    <span>{s}</span>
                   </button>
                 ))}
               </div>
