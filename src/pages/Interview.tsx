@@ -4,6 +4,7 @@ import { listInterviews, saveInterview, deleteInterview, listResumes, getResume 
 import { streamChat, chatJSON, type ChatTurn } from '@/lib/ai';
 import { SYSTEM_PROMPT, INTERVIEW_PREP_PROMPT, fill } from '@/lib/prompts';
 import { toast, cn, relativeTime } from '@/lib/utils';
+import Icon from '@/components/Icon';
 import type { InterviewPrep, InterviewQuestion, ResumeVersion } from '@/types';
 import { nanoid } from 'nanoid';
 
@@ -15,10 +16,10 @@ const CATEGORY_LABEL: Record<InterviewQuestion['category'], { label: string; col
   culture: { label: '文化', color: 'text-pink-400 bg-pink-500/10' }
 };
 
-const DIFFICULTY_LABEL: Record<InterviewQuestion['difficulty'], string> = {
-  easy: '⭐',
-  medium: '⭐⭐',
-  hard: '⭐⭐⭐'
+const DIFFICULTY_LABEL: Record<InterviewQuestion['difficulty'], JSX.Element> = {
+  easy: <Icon name="star" size={10} />,
+  medium: <><Icon name="star" size={10} /><Icon name="star" size={10} /></>,
+  hard: <><Icon name="star" size={10} /><Icon name="star" size={10} /><Icon name="star" size={10} /></>
 };
 
 export default function Interview() {
@@ -149,7 +150,7 @@ export default function Interview() {
             />
             {error && <div className="text-xs text-red-400">{error}</div>}
             <button className="btn-primary w-full text-xs" onClick={generate} disabled={generating || !jdText.trim()}>
-              {generating ? '生成中...' : '✦ 生成面试清单'}
+              {generating ? '生成中...' : <><Icon name="sparkles" size={14} /> 生成面试清单</>}
             </button>
           </div>
 
@@ -165,7 +166,7 @@ export default function Interview() {
                       <div className="text-xs text-ink-100 truncate">{p.jobTitle} @ {p.company}</div>
                       <div className="text-[10px] text-ink-500">{p.questions.length} 题 · {relativeTime(p.updatedAt)}</div>
                     </button>
-                    <button className="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-red-400 text-xs px-2 shrink-0" onClick={() => remove(p.id)}>✕</button>
+                    <button className="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-red-400 text-xs px-2 shrink-0" onClick={() => remove(p.id)}><Icon name="close" size={12} /></button>
                   </div>
                 ))}
               </div>
@@ -177,7 +178,7 @@ export default function Interview() {
         <div className="md:col-span-2">
           {!current ? (
             <div className="card p-8 text-center">
-              <div className="text-4xl mb-3">◈</div>
+              <div className="text-4xl mb-3"><Icon name="sparkles" size={36} /></div>
               <p className="text-ink-400 text-sm">填写左侧表单生成面试准备清单，或从历史中选择一份</p>
             </div>
           ) : (
@@ -202,7 +203,7 @@ export default function Interview() {
               {/* 面试题列表 */}
               <div className="card p-4">
                 <h4 className="text-xs font-semibold text-ink-300 mb-3 flex items-center gap-2">
-                  <span>📝</span> 面试题清单
+                  <Icon name="edit" size={14} /> 面试题清单
                 </h4>
                 <div className="space-y-2">
                   {current.questions.map((q, i) => (
@@ -215,7 +216,7 @@ export default function Interview() {
                             <span className="text-[10px] text-ink-500">{DIFFICULTY_LABEL[q.difficulty]}</span>
                           </div>
                           <div className="text-sm text-ink-100 font-medium">{q.question}</div>
-                          <div className="text-xs text-ink-500 mt-1">🎯 {q.intent}</div>
+                          <div className="text-xs text-ink-500 mt-1"><Icon name="target" size={12} /> {q.intent}</div>
                           {q.suggestedAnswer && (
                             <details className="mt-2">
                               <summary className="text-xs text-accent cursor-pointer hover:underline">查看建议答题方向</summary>
@@ -229,7 +230,7 @@ export default function Interview() {
                           onClick={() => togglePracticed(q.id)}
                           className={cn('text-xs px-2 py-1 rounded', q.practiced ? 'text-accent bg-accent/10' : 'text-ink-500 hover:text-ink-300')}
                         >
-                          {q.practiced ? '✓ 已练习' : '标记'}
+                          {q.practiced ? <><Icon name="check" size={12} /> 已练习</> : '标记'}
                         </button>
                       </div>
                     </div>
@@ -241,7 +242,7 @@ export default function Interview() {
               {current.myStories.length > 0 && (
                 <div className="card p-4">
                   <h4 className="text-xs font-semibold text-ink-300 mb-3 flex items-center gap-2">
-                    <span>📖</span> 可复用的 STAR 故事
+                    <Icon name="resume" size={14} /> 可复用的 STAR 故事
                   </h4>
                   <ul className="space-y-1.5">
                     {current.myStories.map((s, i) => (
@@ -255,7 +256,7 @@ export default function Interview() {
               {current.questionsToAsk.length > 0 && (
                 <div className="card p-4">
                   <h4 className="text-xs font-semibold text-ink-300 mb-3 flex items-center gap-2">
-                    <span>❓</span> 反问面试官
+                    <Icon name="info" size={14} /> 反问面试官
                   </h4>
                   <ul className="space-y-1.5">
                     {current.questionsToAsk.map((q, i) => (

@@ -9,6 +9,7 @@ import { SYSTEM_PROMPT, JD_ANALYSIS_PROMPT, fill } from '@/lib/prompts';
 import { buildProfileText, buildJobLeadText, hashText, rankLeads } from '@/lib/matching';
 import { toast, cn, relativeTime } from '@/lib/utils';
 import type { AISettings, CareerProfile, Experience, JDAnalysis, JobLead } from '@/types';
+import Icon from '@/components/Icon';
 
 type ImportStep = 'idle' | 'analyzing' | 'embedding' | 'done';
 
@@ -147,8 +148,8 @@ export default function Jobs() {
           <h1 className="text-xl md:text-2xl font-bold text-ink-100">JD 池 / 匹配推荐</h1>
           <p className="text-xs md:text-sm text-ink-500 mt-1">导入 JD → AI 拆解 + 向量化 → 按你的画像评分排序</p>
         </div>
-        <button className="btn-primary text-xs shrink-0" onClick={() => setImportOpen(true)}>
-          + 导入 JD
+        <button className="btn-primary text-xs shrink-0 flex items-center gap-1" onClick={() => setImportOpen(true)}>
+          <Icon name="plus" size={14} /> 导入 JD
         </button>
       </div>
 
@@ -167,18 +168,18 @@ export default function Jobs() {
         </div>
         <div className="flex gap-2 shrink-0">
           <button
-            className="btn-outline text-xs"
+            className="btn-outline text-xs flex items-center gap-1"
             onClick={refreshProfileEmbedding}
             disabled={!embeddingReady || refreshingEmbed}
           >
-            {refreshingEmbed ? '⏳ 计算中...' : '⟳ 更新画像向量'}
+            {refreshingEmbed ? <><Icon name="clock" size={14} /> 计算中...</> : <><Icon name="refresh" size={14} /> 更新画像向量</>}
           </button>
           <button
-            className="btn-ghost text-xs"
+            className="btn-ghost text-xs flex items-center gap-1"
             onClick={fetchShared}
             disabled={!profile?.embedding || loadingShared}
           >
-            {loadingShared ? '⏳ 搜索中...' : '✧ 共享池推荐'}
+            {loadingShared ? <><Icon name="clock" size={14} /> 搜索中...</> : <><Icon name="sparkles" size={14} /> 共享池推荐</>}
           </button>
         </div>
       </div>
@@ -201,7 +202,7 @@ export default function Jobs() {
                   <span className={cn('chip text-[10px]', m.score > 0.7 ? 'chip-accent' : '')}>
                     {Math.round(m.score * 100)}%
                   </span>
-                  <button className="btn-ghost text-xs px-2 py-1" onClick={() => applyShared(m)}>+</button>
+                  <button className="btn-ghost text-xs px-2 py-1 flex items-center" onClick={() => applyShared(m)}><Icon name="plus" size={14} /></button>
                 </div>
               </div>
             ))}
@@ -215,7 +216,7 @@ export default function Jobs() {
         <h3 className="text-sm font-semibold text-ink-100 mb-2">本地 JD 池（{ranked.length}）</h3>
         {ranked.length === 0 ? (
           <div className="card p-8 text-center">
-            <div className="text-4xl mb-2 text-ink-600">▤</div>
+            <div className="mb-2 text-ink-600"><Icon name="briefcase" size={36} /></div>
             <div className="text-sm text-ink-400 mb-1">还没有 JD</div>
             <div className="text-xs text-ink-500">点击右上角"导入 JD"开始</div>
           </div>
@@ -243,12 +244,12 @@ export default function Jobs() {
                     </div>
                     {lead.matchReasons && lead.matchReasons.length > 0 && (
                       <div className="text-[11px] text-accent/80 mt-1.5">
-                        {lead.matchReasons.map((r, i) => <div key={i}>✓ {r}</div>)}
+                        {lead.matchReasons.map((r, i) => <div key={i} className="flex items-center gap-1"><Icon name="check" size={12} /> {r}</div>)}
                       </div>
                     )}
                     {lead.matchGaps && lead.matchGaps.length > 0 && (
                       <div className="text-[11px] text-amber-400/80 mt-1">
-                        {lead.matchGaps.map((g, i) => <div key={i}>⚠ {g}</div>)}
+                        {lead.matchGaps.map((g, i) => <div key={i} className="flex items-center gap-1"><Icon name="alert" size={12} /> {g}</div>)}
                       </div>
                     )}
                     <div className="text-[10px] text-ink-600 mt-1.5">
@@ -267,14 +268,14 @@ export default function Jobs() {
                       <option value="applied">已投</option>
                       <option value="ignored">忽略</option>
                     </select>
-                    <button className="text-[10px] text-red-400 px-1.5 py-0.5 min-h-[24px]" onClick={() => remove(lead.id)}>✕</button>
+                    <button className="text-[10px] text-red-400 px-1.5 py-0.5 min-h-[24px] flex items-center justify-center" onClick={() => remove(lead.id)}><Icon name="close" size={12} /></button>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-1.5 mt-2.5">
                   {lead.jdText && (
-                    <button className="btn-outline text-[10px] px-2 py-1" onClick={() => goGenResume(lead)}>✦ 生成简历</button>
+                    <button className="btn-outline text-[10px] px-2 py-1 flex items-center gap-1" onClick={() => goGenResume(lead)}><Icon name="sparkles" size={12} /> 生成简历</button>
                   )}
-                  <button className="btn-ghost text-[10px] px-2 py-1" onClick={() => goTrack(lead)}>→ 投递追踪</button>
+                  <button className="btn-ghost text-[10px] px-2 py-1 flex items-center gap-1" onClick={() => goTrack(lead)}><Icon name="arrow-right" size={12} /> 投递追踪</button>
                 </div>
               </div>
             ))}
@@ -423,8 +424,8 @@ function ImportDrawer({
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base font-semibold text-ink-100">导入 JD</h3>
-          <button className="btn-ghost text-xs" onClick={step === 'idle' ? onClose : cancel} disabled={step === 'done'}>
-            {step === 'idle' ? '✕' : '取消'}
+          <button className="btn-ghost text-xs flex items-center" onClick={step === 'idle' ? onClose : cancel} disabled={step === 'done'}>
+            {step === 'idle' ? <Icon name="close" size={14} /> : '取消'}
           </button>
         </div>
 
@@ -470,7 +471,7 @@ function ImportDrawer({
               <input type="checkbox" checked={shareToPool} onChange={e => setShareToPool(e.target.checked)} />
               上传匿名向量到共享池（仅向量+元信息，不含完整 JD）
             </label>
-            {error && <div className="text-xs text-red-400">⚠ {error}</div>}
+            {error && <div className="text-xs text-red-400 flex items-center gap-1"><Icon name="alert" size={14} /> {error}</div>}
             <div className="flex justify-end gap-2 pt-1">
               <button className="btn-primary text-xs" onClick={run}>导入并分析</button>
             </div>
@@ -479,7 +480,7 @@ function ImportDrawer({
 
         {(step === 'analyzing' || step === 'embedding') && (
           <div className="py-10 text-center">
-            <div className="text-3xl mb-3 animate-pulse">{step === 'analyzing' ? '◉' : '✧'}</div>
+            <div className="mb-3 animate-pulse flex justify-center">{step === 'analyzing' ? <Icon name="target" size={32} /> : <Icon name="sparkles" size={32} />}</div>
             <div className="text-sm text-ink-300">
               {step === 'analyzing' ? 'AI 正在拆解 JD...' : '生成向量并写入...'}
             </div>
@@ -489,7 +490,7 @@ function ImportDrawer({
 
         {step === 'done' && (
           <div className="py-10 text-center">
-            <div className="text-3xl mb-3 text-accent">✓</div>
+            <div className="mb-3 text-accent flex justify-center"><Icon name="check" size={32} /></div>
             <div className="text-sm text-ink-300">导入成功</div>
           </div>
         )}

@@ -4,6 +4,7 @@ import { listApplications, listExperiences, listInterviews, listResumes, listJob
 import { relativeTime, cn } from '@/lib/utils';
 import type { Application, CareerProfile, Experience, InterviewPrep, JobLead, ResumeVersion } from '@/types';
 import { useStore } from '@/store/useStore';
+import Icon, { type IconName } from '@/components/Icon';
 
 const STAGE_LABEL: Record<Application['stage'], { label: string; color: string }> = {
   planning: { label: '准备中', color: 'text-ink-400 bg-ink-700' },
@@ -43,12 +44,12 @@ export default function Dashboard() {
     })();
   }, []);
 
-  const stats = [
-    { label: '职业档案', value: profile?.name ? '已建立' : '未建立', to: '/profile', icon: '◉', accent: !profile?.name },
-    { label: 'JD 池', value: jobLeads.length, to: '/jobs', icon: '⌖' },
-    { label: '简历版本', value: resumes.length, to: '/resume', icon: '✦' },
-    { label: '投递记录', value: applications.length, to: '/tracking', icon: '◈' },
-    { label: '面试准备', value: interviews.length, to: '/interview', icon: '◈' }
+  const stats: { label: string; value: string | number; to: string; icon: IconName; accent?: boolean }[] = [
+    { label: '职业档案', value: profile?.name ? '已建立' : '未建立', to: '/profile', icon: 'profile', accent: !profile?.name },
+    { label: 'JD 池', value: jobLeads.length, to: '/jobs', icon: 'jobs' },
+    { label: '简历版本', value: resumes.length, to: '/resume', icon: 'resume' },
+    { label: '投递记录', value: applications.length, to: '/tracking', icon: 'tracking' },
+    { label: '面试准备', value: interviews.length, to: '/interview', icon: 'interview' }
   ];
 
   const activeApps = applications.filter((a) =>
@@ -78,18 +79,18 @@ export default function Dashboard() {
           </p>
           <div className="flex flex-wrap gap-2 mt-4">
             <Link to="/jobs" className="btn-primary text-xs md:text-sm">
-              ⌖ 导入 JD 找匹配
+              <Icon name="jobs" size={14} className="inline-block mr-1 align-[-2px]" /> 导入 JD 找匹配
             </Link>
             <Link to="/resume" className="btn-outline text-xs md:text-sm">
-              ✦ 粘贴 JD 生成简历
+              <Icon name="sparkles" size={14} className="inline-block mr-1 align-[-2px]" /> 粘贴 JD 生成简历
             </Link>
             {!profile?.name && (
               <Link to="/profile" className="btn-ghost text-xs md:text-sm">
-                ◉ 先建立职业档案
+                <Icon name="profile" size={14} className="inline-block mr-1 align-[-2px]" /> 先建立职业档案
               </Link>
             )}
             <Link to="/chat" className="btn-ghost text-xs md:text-sm">
-              ✧ 与 AI 求职教练对话
+              <Icon name="chat" size={14} className="inline-block mr-1 align-[-2px]" /> 与 AI 求职教练对话
             </Link>
           </div>
         </div>
@@ -99,7 +100,7 @@ export default function Dashboard() {
       {!aiSettings?.apiKey && aiSettings?.provider !== 'trial' && (
         <div className="card p-4 border-amber-500/30 bg-amber-500/5 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <span className="text-amber-400 text-lg shrink-0">⚠</span>
+            <Icon name="alert" size={18} className="text-amber-400 shrink-0" />
             <div className="min-w-0">
               <div className="text-sm text-ink-100 font-medium">未配置 AI</div>
               <div className="text-xs text-ink-400">使用 Trial 模式（每日配额）或填写自己的 API Key</div>
@@ -114,7 +115,7 @@ export default function Dashboard() {
         {stats.map((s) => (
           <Link key={s.label} to={s.to} className={cn('card-hover p-4 group', s.accent && 'border-amber-500/30')}>
             <div className="text-xs text-ink-500 mb-1 flex items-center gap-1">
-              <span>{s.icon}</span>
+              <Icon name={s.icon} size={14} />
               {s.label}
             </div>
             <div className={cn('text-xl font-bold', s.accent ? 'text-amber-400' : 'text-ink-100')}>

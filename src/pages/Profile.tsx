@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getProfile, listExperiences, saveExperience, deleteExperience, exportAll, importAll, saveProfile } from '@/lib/db';
 import { toast, downloadText, cn } from '@/lib/utils';
+import SkillInput from '@/components/SkillInput';
 import type { CareerProfile, Experience } from '@/types';
 
 const TYPE_LABEL: Record<Experience['type'], string> = {
@@ -256,8 +257,8 @@ export default function Profile() {
                 />
               </div>
               <div>
-                <label className="label">标签（逗号分隔）</label>
-                <input className="input" value={tagsText} onChange={e => setTagsText(e.target.value)} placeholder="React, TypeScript, 性能优化" />
+                <label className="label">标签（逗号分隔，支持自动补全）</label>
+                <SkillInput value={tagsText} onChange={setTagsText} placeholder="React, TypeScript, 性能优化" />
               </div>
               <div>
                 <label className="label">补充描述（可选）</label>

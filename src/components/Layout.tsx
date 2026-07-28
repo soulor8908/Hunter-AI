@@ -1,23 +1,24 @@
 import { useState, type ReactNode } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import Icon, { type IconName } from '@/components/Icon';
 
 interface NavItem {
   to: string;
   label: string;
-  icon: string;
+  icon: IconName;
   desc: string;
 }
 
 const NAV: NavItem[] = [
-  { to: '/', label: '总览', icon: '◈', desc: 'Dashboard' },
-  { to: '/profile', label: '职业档案', icon: '◉', desc: '长期上下文' },
-  { to: '/jobs', label: 'JD 匹配', icon: '⌖', desc: '推荐 + 投递池' },
-  { to: '/resume', label: '简历生成', icon: '✦', desc: '一岗一简历' },
-  { to: '/interview', label: '面试准备', icon: '◈', desc: '投递即学习' },
-  { to: '/tracking', label: '投递追踪', icon: '▤', desc: 'Pipeline' },
-  { to: '/chat', label: '求职助手', icon: '✧', desc: 'AI Chat' },
-  { to: '/settings', label: '设置', icon: '⚙', desc: 'API Key' }
+  { to: '/', label: '总览', icon: 'dashboard', desc: 'Dashboard' },
+  { to: '/profile', label: '职业档案', icon: 'profile', desc: '长期上下文' },
+  { to: '/jobs', label: 'JD 匹配', icon: 'jobs', desc: '推荐 + 投递池' },
+  { to: '/resume', label: '简历生成', icon: 'resume', desc: '一岗一简历' },
+  { to: '/interview', label: '面试准备', icon: 'interview', desc: '投递即学习' },
+  { to: '/tracking', label: '投递追踪', icon: 'tracking', desc: 'Pipeline' },
+  { to: '/chat', label: '求职助手', icon: 'chat', desc: 'AI Chat' },
+  { to: '/settings', label: '设置', icon: 'settings', desc: 'API Key' }
 ];
 
 // 移动端底部 Tab：5 个核心入口（拇指可达）
@@ -63,7 +64,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                 cn(isActive ? 'nav-item-active' : 'nav-item')
               }
             >
-              <span className="text-base w-4 text-center">{item.icon}</span>
+              <Icon name={item.icon} size={18} className="shrink-0" />
               <div className="flex-1 min-w-0">
                 <div className="truncate">{item.label}</div>
                 <div className="text-[10px] text-ink-500 truncate">{item.desc}</div>
@@ -96,14 +97,14 @@ export default function Layout({ children }: { children: ReactNode }) {
           <button
             onClick={() => setOverflowOpen(true)}
             className={cn(
-              'w-9 h-9 flex items-center justify-center rounded-lg border text-lg shrink-0',
+              'w-9 h-9 flex items-center justify-center rounded-lg border shrink-0',
               activeOverflow
                 ? 'border-accent bg-accent/10 text-accent'
                 : 'border-ink-700 text-ink-300'
             )}
             aria-label="更多"
           >
-            ⋯
+            <Icon name="more" size={18} />
           </button>
         </header>
 
@@ -130,14 +131,14 @@ export default function Layout({ children }: { children: ReactNode }) {
                 active ? 'text-accent' : 'text-ink-500'
               )}
             >
-              <span className="text-base leading-none">{item.icon}</span>
+              <Icon name={item.icon} size={20} />
               <span className="leading-none">{item.label}</span>
             </NavLink>
           );
         })}
       </nav>
 
-      {/* 移动端溢出菜单（档案 / 设置） */}
+      {/* 移动端溢出菜单（档案 / 面试 / 设置） */}
       {overflowOpen && (
         <div
           className="md:hidden fixed inset-0 z-40 bg-ink-900/80 backdrop-blur-sm flex items-end"
@@ -161,7 +162,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                     active ? 'bg-accent/10 text-accent' : 'text-ink-300 hover:bg-ink-700/50'
                   )}
                 >
-                  <span className="text-base w-5 text-center">{item.icon}</span>
+                  <Icon name={item.icon} size={18} />
                   <div className="text-left">
                     <div>{item.label}</div>
                     <div className="text-[10px] text-ink-500">{item.desc}</div>

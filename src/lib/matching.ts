@@ -2,6 +2,7 @@
 // 卡帕西式：纯函数，无副作用，可测试。
 // 评分组合：语义相似度（embedding cosine）+ 硬技能命中 + 城市硬过滤 + 薪资带匹配
 import type { CareerProfile, Experience, JobLead } from '@/types';
+import { normalizeSkill } from '@/lib/skills';
 
 /**
  * 余弦相似度。空向量返回 0。
@@ -67,26 +68,29 @@ export function buildJobLeadText(j: Pick<JobLead, 'jobTitle' | 'company' | 'jdTe
 }
 
 /**
- * 技能标签集合（从经历 tags 汇总）。
+ * 技能标签集合（从经历 tags 汇总，归一化到标准 canonical 名）。
+ * 用 skills 词库做标准化：用户写 "React.js" → "React"，AI 提取 "reactjs" → "React"
  */
 export function collectSkillTags(experiences: Experience[]): Set<string> {
   const set = new Set<string>();
   for (const e of experiences) {
     for (const t of e.tags ?? []) {
-      set.add(t.toLowerCase().trim());
+      const normalized = normalizeSkill(t);
+      if (normalized) set.add(normalized);
     }
   }
   return set;
 }
 
 /**
- * 从 JD 分析的 keywords 中提取技能词。
+ * 从 JD 分析的 keywords 中提取技能词（归一化）。
  */
 export function extractJDKeywords(jdAnalysis: JobLead['jdAnalysis']): Set<string> {
   const set = new Set<string>();
   if (!jdAnalysis) return set;
   for (const k of jdAnalysis.keywords ?? []) {
-    set.add(k.toLowerCase().trim());
+    const normalized = normalizeSkill(k);
+    if (normalized) set.add(normalized);
   }
   return set;
 }

@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useStore } from '@/store/useStore';
 import { getProfile, listExperiences, listResumes, saveResume, getResume, deleteResume } from '@/lib/db';
 import { streamChat, chatJSON, type ChatTurn } from '@/lib/ai';
 import { SYSTEM_PROMPT, JD_ANALYSIS_PROMPT, RESUME_GEN_PROMPT, fill } from '@/lib/prompts';
 import { renderMarkdown, toast, copyToClipboard, downloadText, cn, relativeTime } from '@/lib/utils';
+import Icon from '@/components/Icon';
 import type { CareerProfile, Experience, JDAnalysis, ResumeVersion } from '@/types';
 
 type Step = 'input' | 'analyzing' | 'analyzed' | 'generating' | 'done';
@@ -253,31 +254,31 @@ ${e.description ? '描述: ' + e.description : ''}
 
         {error && (
           <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-xs text-red-300">
-            ⚠ {error}
+            <Icon name="alert" size={14} /> {error}
           </div>
         )}
 
         <div className="flex flex-wrap gap-2">
           {step === 'input' && (
             <button className="btn-primary" onClick={analyzeJD} disabled={!jdText.trim()}>
-              ◉ 拆解 JD
+              <Icon name="profile" size={14} /> 拆解 JD
             </button>
           )}
           {(step === 'analyzing' || step === 'generating') && (
-            <button className="btn-outline" onClick={stop}>⏹ 停止</button>
+            <button className="btn-outline" onClick={stop}><Icon name="stop" size={14} /> 停止</button>
           )}
           {step === 'analyzed' && (
             <>
-              <button className="btn-primary" onClick={generateResume}>✦ 生成专属简历</button>
-              <button className="btn-ghost" onClick={() => setStep('input')}>← 修改 JD</button>
+              <button className="btn-primary" onClick={generateResume}><Icon name="sparkles" size={14} /> 生成专属简历</button>
+              <button className="btn-ghost" onClick={() => setStep('input')}><Icon name="arrow-left" size={14} /> 修改 JD</button>
             </>
           )}
           {step === 'done' && (
             <>
-              <button className="btn-outline text-xs" onClick={() => copyToClipboard(streamingMd)}>📋 复制 Markdown</button>
-              <button className="btn-outline text-xs" onClick={() => downloadText(`${company || 'resume'}-${jobTitle}.md`, streamingMd, 'text/markdown')}>⬇ 下载 .md</button>
-              <button className="btn-ghost text-xs" onClick={() => window.print()}>🖨 打印/PDF</button>
-              <button className="btn-ghost text-xs" onClick={() => { setStep('input'); setAnalysis(null); setStreamingMd(''); setSavedId(null); nav('/resume'); }}>+ 新建</button>
+              <button className="btn-outline text-xs" onClick={() => copyToClipboard(streamingMd)}><Icon name="copy" size={14} /> 复制 Markdown</button>
+              <button className="btn-outline text-xs" onClick={() => downloadText(`${company || 'resume'}-${jobTitle}.md`, streamingMd, 'text/markdown')}><Icon name="download" size={14} /> 下载 .md</button>
+              <button className="btn-ghost text-xs" onClick={() => window.print()}><Icon name="print" size={14} /> 打印/PDF</button>
+              <button className="btn-ghost text-xs" onClick={() => { setStep('input'); setAnalysis(null); setStreamingMd(''); setSavedId(null); nav('/resume'); }}><Icon name="plus" size={14} /> 新建</button>
             </>
           )}
         </div>
@@ -285,9 +286,9 @@ ${e.description ? '描述: ' + e.description : ''}
         {/* 步骤指示 */}
         <div className="flex items-center gap-2 text-[10px] text-ink-500 pt-1">
           <StepDot active={step !== 'input'} label="拆解 JD" />
-          <span>→</span>
+          <Icon name="arrow-right" size={12} />
           <StepDot active={['generating', 'done'].includes(step)} label="生成简历" />
-          <span>→</span>
+          <Icon name="arrow-right" size={12} />
           <StepDot active={step === 'done'} label="保存" />
         </div>
       </div>
@@ -296,7 +297,7 @@ ${e.description ? '描述: ' + e.description : ''}
       {analysis && (step === 'analyzed' || step === 'generating' || step === 'done') && (
         <div className="card p-4 md:p-5">
           <h3 className="text-sm font-semibold text-ink-100 mb-3 flex items-center gap-2">
-            <span className="text-accent">◉</span> JD 拆解
+            <Icon name="profile" size={14} className="text-accent" /> JD 拆解
           </h3>
           <div className="grid sm:grid-cols-2 gap-4 text-xs">
             <AnalysisSection title="关键技能词" items={analysis.keywords} variant="accent" />
@@ -304,7 +305,7 @@ ${e.description ? '描述: ' + e.description : ''}
             <AnalysisSection title="硬性要求" items={analysis.requirements} />
             <AnalysisSection title="加分项" items={analysis.niceToHaves} />
             {analysis.redFlags.length > 0 && (
-              <AnalysisSection title="⚠ 警示信号" items={analysis.redFlags} variant="red" />
+              <AnalysisSection title={<><Icon name="alert" size={12} /> 警示信号</>} items={analysis.redFlags} variant="red" />
             )}
             <AnalysisSection title="推测面试考察点" items={analysis.interviewFocus} variant="purple" />
           </div>
@@ -316,7 +317,7 @@ ${e.description ? '描述: ' + e.description : ''}
         <div className="card p-4 md:p-5">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-ink-100 flex items-center gap-2">
-              <span className="text-accent">✦</span>
+              <Icon name="sparkles" size={14} className="text-accent" />
               {step === 'generating' ? '生成中...' : '简历预览'}
               {step === 'generating' && <span className="stream-cursor" />}
             </h3>
@@ -342,7 +343,7 @@ function StepDot({ active, label }: { active: boolean; label: string }) {
   );
 }
 
-function AnalysisSection({ title, items, variant = 'default' }: { title: string; items: string[]; variant?: 'default' | 'accent' | 'red' | 'purple' }) {
+function AnalysisSection({ title, items, variant = 'default' }: { title: ReactNode; items: string[]; variant?: 'default' | 'accent' | 'red' | 'purple' }) {
   if (!items?.length) return null;
   const colorClass = {
     default: 'text-ink-300 bg-ink-700/50',

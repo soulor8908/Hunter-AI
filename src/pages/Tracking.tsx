@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { listApplications, saveApplication, deleteApplication, listResumes } from '@/lib/db';
 import { toast, cn, formatDateShort, relativeTime } from '@/lib/utils';
+import Icon from '@/components/Icon';
 import type { Application, ApplicationStage, ResumeVersion } from '@/types';
 
 const STAGES: { key: ApplicationStage; label: string; border: string; dot: string }[] = [
@@ -66,7 +67,7 @@ export default function Tracking() {
           <p className="text-xs md:text-sm text-ink-500 mt-1">看板视图 · 每次状态变更都是一次学习</p>
         </div>
         <button className="btn-primary text-xs shrink-0" onClick={() => { setEditing(null); setShowForm(true); }}>
-          + 新增
+          <Icon name="plus" size={14} /> 新增
         </button>
       </div>
 
@@ -97,7 +98,7 @@ export default function Tracking() {
                   <div className="text-xs font-medium text-ink-100 truncate">{a.jobTitle}</div>
                   <div className="text-[10px] text-ink-500 truncate">@ {a.company}</div>
                   {a.nextAction && (
-                    <div className="text-[10px] text-amber-400 mt-1 truncate">→ {a.nextAction}</div>
+                    <div className="text-[10px] text-amber-400 mt-1 truncate"><Icon name="arrow-right" size={10} /> {a.nextAction}</div>
                   )}
                   <div className="text-[9px] text-ink-600 mt-1">{relativeTime(a.updatedAt)}</div>
                   {/* 移动端常显，桌面端 hover 显示 */}
@@ -113,7 +114,7 @@ export default function Tracking() {
                     <button
                       className="text-[10px] text-red-400 px-1.5 py-0.5 min-h-[24px]"
                       onClick={(e) => { e.stopPropagation(); remove(a.id); }}
-                    >✕</button>
+                    ><Icon name="close" size={12} /></button>
                   </div>
                 </div>
               ))}
@@ -179,7 +180,7 @@ function AppForm({ initial, resumes, onClose, onSaved }: {
       <div className="card p-5 max-w-xl w-full max-h-[90vh] overflow-y-auto rounded-t-2xl md:rounded-xl" onClick={e => e.stopPropagation()} style={{ paddingBottom: 'calc(1.25rem + env(safe-area-inset-bottom))' }}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base font-semibold text-ink-100">{initial ? '编辑投递' : '新增投递'}</h3>
-          <button className="btn-ghost text-xs" onClick={onClose}>✕</button>
+          <button className="btn-ghost text-xs" onClick={onClose}><Icon name="close" /></button>
         </div>
         <div className="space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
