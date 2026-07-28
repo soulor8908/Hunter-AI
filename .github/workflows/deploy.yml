@@ -34,24 +34,26 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           set -e
-          echo "::group::Create Vectorize index (if not exists)"
-          npx wrangler vectorize create hunter-ai-jd --dimensions 1536 --metric cosine 2>&1 || echo "Index may already exist, continuing..."
-          echo "::endgroup::"
-
           echo "::group::Create KV namespace (if not exists)"
           KV_OUTPUT=$(npx wrangler kv:namespace create TRIAL_KV 2>&1 || true)
           echo "$KV_OUTPUT"
-          # 从输出中提取 id：id = "xxxx"
           KV_ID=$(echo "$KV_OUTPUT" | grep -oP 'id\s*=\s*"\K[^"]+' | head -1)
           if [ -n "$KV_ID" ]; then
             echo "New KV namespace created with id: $KV_ID"
-            # 更新 wrangler.toml 中的 id
             sed -i "s/id = \".*\"/id = \"$KV_ID\"/" wrangler.toml
             echo "Updated wrangler.toml with new KV id"
           else
             echo "KV namespace may already exist, using id from wrangler.toml"
           fi
           echo "::endgroup::"
+
+          # Vectorize 索引为可选功能，需 API Token 有 Vectorize: Edit 权限
+          # 启用方法：取消 wrangler.toml 中 [[vectorize]] 的注释，然后推送
+          if grep -q '^\[\[vectorize\]\]' wrangler.toml; then
+            echo "::group::Create Vectorize index (if not exists)"
+            npx wrangler vectorize create hunter-ai-jd --dimensions 1536 --metric cosine 2>&1 || echo "Index may already exist or insufficient permissions, continuing..."
+            echo "::endgroup::"
+          fi
 
       - name: Deploy to Cloudflare Worker
         uses: cloudflare/wrangler-action@v3

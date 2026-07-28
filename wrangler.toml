@@ -27,16 +27,19 @@ not_found_handling = "single-page-application"
 # EMBEDDING_API_KEY = "sk-..."      # 与 AI_GATEWAY_API_KEY 可不同
 # EMBEDDING_MODEL = "text-embedding-3-small"
 
-# KV 命名空间（需先 wrangler kv:namespace create TRIAL_KV 创建）
+# KV 命名空间（部署时自动创建，无需手动配置）
 [[kv_namespaces]]
 binding = "TRIAL_KV"
 id = "ab9c576d248a424c895081538270e10b"
 
-# Vectorize 索引（共享 JD 池）
-# 创建命令：wrangler vectorize create hunter-ai-jd --dimensions 1536 --metric cosine
-[[vectorize]]
-binding = "JD_INDEX"
-index_name = "hunter-ai-jd"
+# Vectorize 索引（共享 JD 池，可选功能）
+# 启用步骤：
+# 1. 确保 API Token 有 Vectorize: Edit 权限
+# 2. 取消下方注释
+# 3. 推送代码，部署时会自动创建索引
+# [[vectorize]]
+# binding = "JD_INDEX"
+# index_name = "hunter-ai-jd"
 
 # CORS / 路由
 [vars]
