@@ -107,6 +107,45 @@ export const CHAT_SYSTEM_WITH_CONTEXT = `当前用户上下文：
 
 基于以上上下文回答用户问题。如果问题与上下文无关，按通用求职教练身份回答。`;
 
+export const RESUME_PARSE_PROMPT = `请解析以下简历文本，提取结构化信息，输出 JSON（不要 markdown 代码块包裹，直接输出 JSON）。
+
+JSON 格式：
+{
+  "profile": {
+    "name": "姓名",
+    "headline": "一句话定位（如：3年经验前端工程师）",
+    "summary": "自我介绍",
+    "targetRoles": ["目标岗位1", "目标岗位2"],
+    "targetCities": ["意向城市"],
+    "expectedSalary": "期望薪资",
+    "contact": { "email": "", "phone": "", "github": "", "website": "" }
+  },
+  "experiences": [
+    {
+      "type": "work | education | project | skill | award",
+      "title": "职位/学位/项目名",
+      "org": "公司/学校/组织",
+      "start": "YYYY-MM",
+      "end": "YYYY-MM 或 present",
+      "description": "详细描述",
+      "tags": ["技能标签"],
+      "bullets": ["量化要点1", "量化要点2"]
+    }
+  ]
+}
+
+规则：
+- type 必须是 work/education/project/skill/award 之一
+- 日期统一为 YYYY-MM 格式，如果原文只写了年份则补 01
+- bullets 尽量量化，如果没有明确要点则从描述中提炼
+- 如果某字段无法提取，返回空字符串或空数组
+- 不要编造信息
+
+简历文本：
+{resumeText}
+
+输出 JSON：`;
+
 /**
  * 简单模板替换，避免引入模板引擎
  */

@@ -105,6 +105,47 @@ export default {
       }
     }
 
+    // JD 链接抓取：从招聘网站 URL 提取 JD 正文
+    if (url.pathname === '/api/jd/fetch') {
+      if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
+
+      let body: { url?: string };
+      try { body = await req.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
+
+      if (!body.url) return json({ error: '缺少 url 参数' }, 400);
+
+      let targetUrl: URL;
+      try {
+        targetUrl = new URL(body.url);
+      } catch {
+        return json({ error: 'URL 格式无效' }, 400);
+      }
+      if (!['http:', 'https:'].includes(targetUrl.protocol)) {
+        return json({ error: '仅支持 http/https 协议' }, 400);
+      }
+
+      try {
+        const resp = await fetch(targetUrl.toString(), {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8'
+          },
+          redirect: 'follow'
+        });
+
+        if (!resp.ok) {
+          return json({ error: `目标站点返回 ${resp.status}` }, 502);
+        }
+
+        const html = await resp.text();
+        const extracted = extractJDFromHTML(html, targetUrl.hostname);
+        return json(extracted, 200);
+      } catch (e) {
+        return json({ error: `抓取失败：${(e as Error).message}` }, 502);
+      }
+    }
+
     // 共享池：上传 JD 向量
     if (url.pathname === '/api/jd/import') {
       if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
@@ -254,6 +295,98 @@ async function incUsed(env: Env, ip: string): Promise<void> {
   const used = await getUsed(env, ip);
   // KV 写入有最终一致性，配额可能略超，但 Trial 模式可接受
   await env.TRIAL_KV.put(key, String(used + 1), { expirationTtl: 86400 });
+}
+
+/**
+ * 从 HTML 中提取 JD 相关信息（岗位标题、公司、正文）。
+ * Worker 无 DOM 环境，用正则做轻量解析。
+ * 策略：先清理 script/style/nav，再提取 title/meta，最后取 body 文本。
+ */
+function extractJDFromHTML(html: string, hostname: string): { title: string; company: string; content: string; source: string } {
+  // 1. 清理无关标签
+  let cleaned = html
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<nav[\s\S]*?<\/nav>/gi, '')
+    .replace(/<footer[\s\S]*?<\/footer>/gi, '')
+    .replace(/<header[\s\S]*?<\/header>/gi, '')
+    .replace(/<noscript[\s\S]*?<\/noscript>/gi, '');
+
+  // 2. 提取 <title>
+  let title = '';
+  const titleMatch = cleaned.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+  if (titleMatch) title = decodeEntities(titleMatch[1].trim());
+
+  // 3. 提取 meta description / keywords
+  let metaDesc = '';
+  const descMatch = cleaned.match(/<meta\s+[^>]*?(?:name|property)=["'](?:description|og:description)["'][^>]*?content=["']([^"']+)["']/i);
+  if (descMatch) metaDesc = decodeEntities(descMatch[1].trim());
+
+  // 4. 提取 og:title（通常更干净）
+  const ogTitleMatch = cleaned.match(/<meta\s+[^>]*?property=["']og:title["'][^>]*?content=["']([^"']+)["']/i);
+  if (ogTitleMatch && !title) title = decodeEntities(ogTitleMatch[1].trim());
+
+  // 5. 提取 body 文本
+  let bodyText = '';
+  const bodyMatch = cleaned.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+  const bodyHTML = bodyMatch ? bodyMatch[1] : cleaned;
+
+  // 把块级标签转为换行，保留结构
+  bodyText = bodyHTML
+    .replace(/<(?:p|div|li|h[1-6]|tr|br|hr)[^>]*>/gi, '\n')
+    .replace(/<\/(?:p|div|li|h[1-6]|tr)>/gi, '\n')
+    .replace(/<[^>]+>/g, '')          // 移除所有剩余标签
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&[a-z]+;/gi, '')         // 其它实体
+    .replace(/\n{3,}/g, '\n\n')        // 合并多余空行
+    .replace(/[ \t]+/g, ' ')           // 合并空格
+    .trim();
+
+  // 6. 截断过长内容（避免 Token 爆炸）
+  if (bodyText.length > 8000) {
+    bodyText = bodyText.slice(0, 8000) + '\n...(内容已截断)';
+  }
+
+  // 7. 从 title 推测岗位名和公司
+  let company = '';
+  let jobTitle = title;
+  // 常见模式："岗位名-公司名-招聘网站名"
+  const parts = title.split(/[-_|·]/).map(s => s.trim()).filter(Boolean);
+  if (parts.length >= 2) {
+    jobTitle = parts[0];
+    // 排除招聘网站名
+    const siteNames = ['boss直聘', '拉勾', '智联招聘', '前程无忧', '猎聘', 'linkedin', ' github', 'indeed'];
+    for (let i = 1; i < parts.length; i++) {
+      if (!siteNames.some(s => parts[i].toLowerCase().includes(s))) {
+        company = parts[i];
+        break;
+      }
+    }
+  }
+
+  return {
+    title: jobTitle || metaDesc.slice(0, 50) || '未知岗位',
+    company,
+    content: bodyText || metaDesc || '(无法提取正文，可能是 SPA 页面)',
+    source: hostname
+  };
+}
+
+function decodeEntities(s: string): string {
+  return s
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&[a-z]+;/gi, '')
+    .trim();
 }
 
 async function callUpstream(env: Env, messages: ChatMessage[], stream: boolean): Promise<Response> {

@@ -240,11 +240,16 @@ export default function Chat() {
         {/* 顶栏 */}
         <div className="border-b border-ink-800 p-3 flex items-center gap-2">
           <button
-            className="md:hidden btn-ghost text-xs px-2 py-1 shrink-0"
+            className="md:hidden btn-ghost text-xs px-2 py-1 shrink-0 relative"
             onClick={() => setDrawerOpen(true)}
             aria-label="会话列表"
           >
             <Icon name="menu" size={18} />
+            {sessions.length > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-accent text-ink-900 text-[9px] font-bold flex items-center justify-center leading-none">
+                {sessions.length > 99 ? '99+' : sessions.length}
+              </span>
+            )}
           </button>
           <div className="flex-1 min-w-0">
             <div className="text-sm font-medium text-ink-100 truncate">

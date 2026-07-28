@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react';
+import { useStore } from '@/store/useStore';
 import { getProfile, listExperiences, saveExperience, deleteExperience, exportAll, importAll, saveProfile } from '@/lib/db';
+import { chatJSON, type ChatTurn } from '@/lib/ai';
+import { SYSTEM_PROMPT, RESUME_PARSE_PROMPT, fill } from '@/lib/prompts';
+import { parseResumeFile } from '@/lib/parse';
 import { toast, downloadText, cn } from '@/lib/utils';
 import SkillInput from '@/components/SkillInput';
 import Icon from '@/components/Icon';
@@ -25,12 +29,14 @@ const EMPTY_EXP: Partial<Experience> = {
 };
 
 export default function Profile() {
+  const aiSettings = useStore((s) => s.aiSettings);
   const [profile, setProfile] = useState<CareerProfile | null>(null);
   const [experiences, setExperiences] = useState<Experience[]>([]);
   const [editing, setEditing] = useState<Experience | null>(null);
   const [bulletsText, setBulletsText] = useState('');
   const [tagsText, setTagsText] = useState('');
   const [showProfileForm, setShowProfileForm] = useState(false);
+  const [importing, setImporting] = useState(false);
 
   const load = async () => {
     const [p, e] = await Promise.all([getProfile(), listExperiences()]);
@@ -98,6 +104,69 @@ export default function Profile() {
     input.click();
   };
 
+  const onImportResume = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.pdf,.docx,.txt,.md';
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+
+      if (!aiSettings || (aiSettings.provider !== 'trial' && !aiSettings.apiKey)) {
+        toast('导入简历需要配置 AI（用于结构化解析）', 'error');
+        return;
+      }
+
+      setImporting(true);
+      try {
+        // 1. 解析文件为纯文本
+        toast('正在解析文件...', 'info');
+        const resumeText = await parseResumeFile(file);
+
+        // 2. AI 结构化
+        toast('AI 正在提取经历...', 'info');
+        const messages: ChatTurn[] = [
+          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'user', content: fill(RESUME_PARSE_PROMPT, { resumeText: resumeText.slice(0, 8000) }) }
+        ];
+        const out = await chatJSON(messages, aiSettings!);
+        const parsed = JSON.parse(out) as {
+          profile?: Partial<CareerProfile>;
+          experiences?: Array<Partial<Experience> & { type: Experience['type']; title: string }>;
+        };
+
+        // 3. 保存 profile
+        if (parsed.profile?.name) {
+          await saveProfile(parsed.profile);
+        }
+
+        // 4. 保存 experiences
+        const exps = parsed.experiences ?? [];
+        for (const e of exps) {
+          if (!e.title || !e.type) continue;
+          await saveExperience({
+            type: e.type,
+            title: e.title,
+            org: e.org ?? '',
+            start: e.start ?? '',
+            end: e.end ?? 'present',
+            description: e.description ?? '',
+            tags: e.tags ?? [],
+            bullets: e.bullets ?? []
+          });
+        }
+
+        toast(`已导入 ${exps.length} 条经历`, 'success');
+        await load();
+      } catch (e) {
+        toast(`导入失败：${(e as Error).message}`, 'error');
+      } finally {
+        setImporting(false);
+      }
+    };
+    input.click();
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-3">
@@ -106,7 +175,15 @@ export default function Profile() {
           <p className="text-xs md:text-sm text-ink-500 mt-1">长期维护的个人上下文，AI 据此生成针对性简历</p>
         </div>
         <div className="flex gap-2 shrink-0">
-          <button className="btn-ghost text-xs" onClick={onImport}>导入</button>
+          <button
+            className="btn-primary text-xs"
+            onClick={onImportResume}
+            disabled={importing}
+          >
+            <Icon name="upload" size={12} />
+            {importing ? '解析中...' : '导入简历'}
+          </button>
+          <button className="btn-ghost text-xs" onClick={onImport} title="导入 JSON 备份">备份</button>
           <button className="btn-ghost text-xs" onClick={onExport}>导出</button>
         </div>
       </div>

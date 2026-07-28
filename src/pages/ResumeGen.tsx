@@ -28,6 +28,8 @@ export default function ResumeGen() {
   const [error, setError] = useState('');
   const [historyOpen, setHistoryOpen] = useState(false);
   const [exporting, setExporting] = useState<'' | 'pdf' | 'word'>('');
+  const [jdUrl, setJdUrl] = useState('');
+  const [fetchingJd, setFetchingJd] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const resumeRef = useRef<HTMLDivElement>(null);
 
@@ -77,9 +79,43 @@ export default function ResumeGen() {
     return true;
   };
 
+  const fetchJDFromUrl = async (urlToFetch?: string) => {
+    const url = (urlToFetch ?? jdUrl).trim();
+    if (!url) {
+      toast('请输入 JD 链接', 'error');
+      return;
+    }
+    if (!/^https?:\/\//i.test(url)) {
+      toast('链接需以 http:// 或 https:// 开头', 'error');
+      return;
+    }
+    setFetchingJd(true);
+    setError('');
+    try {
+      const resp = await fetch('/api/jd/fetch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url })
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || `抓取失败 (${resp.status})`);
+
+      if (data.content && data.content.length > 20) {
+        setJdText(data.content);
+      }
+      if (data.title && !jobTitle) setJobTitle(data.title);
+      if (data.company && !company) setCompany(data.company);
+      toast(`已抓取 JD${data.title ? `：${data.title}` : ''}`, 'success');
+    } catch (e) {
+      toast(`JD 抓取失败：${(e as Error).message}`, 'error');
+    } finally {
+      setFetchingJd(false);
+    }
+  };
+
   const analyzeJD = async () => {
     if (!jdText.trim()) {
-      toast('请粘贴 JD', 'error');
+      toast('请粘贴 JD 或通过链接抓取', 'error');
       return;
     }
     if (!requireSettings()) return;
@@ -274,12 +310,43 @@ ${e.description ? '描述: ' + e.description : ''}
           </div>
         </div>
         <div>
+          <label className="label">JD 链接（可选，自动抓取）</label>
+          <div className="flex gap-2">
+            <input
+              className="input flex-1"
+              value={jdUrl}
+              onChange={e => setJdUrl(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  fetchJDFromUrl();
+                }
+              }}
+              placeholder="粘贴招聘网站 JD 链接，如 https://www.zhipin.com/job/..."
+              disabled={fetchingJd}
+            />
+            <button
+              className="btn-outline text-xs shrink-0"
+              onClick={() => fetchJDFromUrl()}
+              disabled={fetchingJd || !jdUrl.trim()}
+            >
+              <Icon name="download" size={14} />
+              {fetchingJd ? '抓取中...' : '抓取'}
+            </button>
+          </div>
+          <p className="text-[11px] text-ink-500 mt-1">
+            <Icon name="info" size={11} className="inline mr-1" />
+            支持 BOSS直聘、拉勾、智联等公开 JD 页面；SPA 页面可能无法抓取
+          </p>
+        </div>
+
+        <div>
           <label className="label">JD 内容（粘贴完整职位描述）</label>
           <textarea
             className="textarea min-h-[180px]"
             value={jdText}
             onChange={e => setJdText(e.target.value)}
-            placeholder={'粘贴完整 JD，包括岗位职责和任职要求。\nAI 会拆解出关键词、核心职责、隐藏考察点。'}
+            placeholder={'粘贴完整 JD，或通过上方链接自动抓取。\nAI 会拆解出关键词、核心职责、隐藏考察点。'}
           />
         </div>
 
