@@ -5,6 +5,7 @@ import { getProfile, listExperiences, listResumes, saveResume, getResume, delete
 import { streamChat, chatJSON, type ChatTurn } from '@/lib/ai';
 import { SYSTEM_PROMPT, JD_ANALYSIS_PROMPT, RESUME_GEN_PROMPT, fill } from '@/lib/prompts';
 import { renderMarkdown, toast, copyToClipboard, downloadText, cn, relativeTime } from '@/lib/utils';
+import { exportResumeToPDF, exportResumeToWord } from '@/lib/export';
 import Icon from '@/components/Icon';
 import type { CareerProfile, Experience, JDAnalysis, ResumeVersion } from '@/types';
 
@@ -26,7 +27,9 @@ export default function ResumeGen() {
   const [savedId, setSavedId] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [exporting, setExporting] = useState<'' | 'pdf' | 'word'>('');
   const abortRef = useRef<AbortController | null>(null);
+  const resumeRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     (async () => {
@@ -200,6 +203,34 @@ ${e.description ? '描述: ' + e.description : ''}
     }
   };
 
+  const exportPDF = async () => {
+    if (!resumeRef.current || exporting) return;
+    setExporting('pdf');
+    try {
+      const name = `${company || 'resume'}-${jobTitle || '岗位'}`.replace(/[\\/:*?"<>|]/g, '_');
+      await exportResumeToPDF(resumeRef.current, name);
+      toast('PDF 已下载', 'success');
+    } catch (e) {
+      toast(`PDF 导出失败：${(e as Error).message}`, 'error');
+    } finally {
+      setExporting('');
+    }
+  };
+
+  const exportWord = () => {
+    if (exporting || !streamingMd) return;
+    setExporting('word');
+    try {
+      const name = `${company || 'resume'}-${jobTitle || '岗位'}`.replace(/[\\/:*?"<>|]/g, '_');
+      exportResumeToWord(streamingMd, name);
+      toast('Word 已下载', 'success');
+    } catch (e) {
+      toast(`Word 导出失败：${(e as Error).message}`, 'error');
+    } finally {
+      setExporting('');
+    }
+  };
+
   return (
     <div className="space-y-5">
       {/* 顶栏 */}
@@ -275,9 +306,25 @@ ${e.description ? '描述: ' + e.description : ''}
           )}
           {step === 'done' && (
             <>
-              <button className="btn-outline text-xs" onClick={() => copyToClipboard(streamingMd)}><Icon name="copy" size={14} /> 复制 Markdown</button>
-              <button className="btn-outline text-xs" onClick={() => downloadText(`${company || 'resume'}-${jobTitle}.md`, streamingMd, 'text/markdown')}><Icon name="download" size={14} /> 下载 .md</button>
-              <button className="btn-ghost text-xs" onClick={() => window.print()}><Icon name="print" size={14} /> 打印/PDF</button>
+              <button
+                className="btn-primary text-xs"
+                onClick={exportPDF}
+                disabled={!!exporting}
+              >
+                <Icon name="download" size={14} />
+                {exporting === 'pdf' ? '生成中...' : '下载 PDF'}
+              </button>
+              <button
+                className="btn-outline text-xs"
+                onClick={exportWord}
+                disabled={!!exporting}
+              >
+                <Icon name="download" size={14} />
+                {exporting === 'word' ? '生成中...' : '下载 Word'}
+              </button>
+              <button className="btn-ghost text-xs" onClick={() => copyToClipboard(streamingMd)}><Icon name="copy" size={14} /> 复制</button>
+              <button className="btn-ghost text-xs" onClick={() => downloadText(`${company || 'resume'}-${jobTitle}.md`, streamingMd, 'text/markdown')}><Icon name="download" size={14} /> .md</button>
+              <button className="btn-ghost text-xs" onClick={() => window.print()}><Icon name="print" size={14} /> 打印</button>
               <button className="btn-ghost text-xs" onClick={() => { setStep('input'); setAnalysis(null); setStreamingMd(''); setSavedId(null); nav('/resume'); }}><Icon name="plus" size={14} /> 新建</button>
             </>
           )}
@@ -326,7 +373,8 @@ ${e.description ? '描述: ' + e.description : ''}
             )}
           </div>
           <div
-            className="prose-resume max-w-none"
+            ref={resumeRef}
+            className="prose-resume max-w-none bg-white text-ink-900 p-4 md:p-6 rounded-lg"
             dangerouslySetInnerHTML={{ __html: renderMarkdown(streamingMd || (step === 'generating' ? '' : '_等待生成_')) }}
           />
         </div>
