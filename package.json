@@ -11,7 +11,9 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "deploy:worker": "wrangler deploy",
-    "deploy:pages": "wrangler pages deploy dist"
+    "deploy:pages": "wrangler pages deploy dist",
+    "deploy": "npm run build && wrangler deploy",
+    "dev:worker": "wrangler dev"
   },
   "dependencies": {
     "clsx": "^2.1.1",
@@ -34,6 +36,6 @@
     "typescript": "^5.5.4",
     "vite": "^5.3.5",
     "vite-plugin-pwa": "^0.20.1",
-    "wrangler": "^3.70.0"
+    "wrangler": "^4.114.0"
   }
 }

@@ -1,6 +1,20 @@
+# Hunter AI — Cloudflare 部署配置
+# 模式：Worker + Static Assets 单域部署
+# - /api/* 由 Worker 处理（Trial AI 代理 + 共享 JD 池）
+# - 其它路径由 Static Assets 托管（SPA 由 not_found_handling 处理）
+# - 前后端同域，无 CORS 问题，一条命令部署
+
 name = "hunter-ai-worker"
 main = "worker/index.ts"
 compatibility_date = "2024-09-23"
+
+# 静态资源（前端 SPA）
+# 构建产物在 dist/，由 Worker 通过 ASSETS binding 托管
+# not_found_handling = "single-page-application" 让所有非 /api 路径回退到 index.html，支持前端路由
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
 
 # Trial 模式环境变量（在 Dashboard → Settings → Variables 中配置 secret）
 # AI_GATEWAY_PROVIDER = "deepseek"   # chat 用；embedding 建议配成 openai 兼容
@@ -27,4 +41,3 @@ index_name = "hunter-ai-jd"
 # CORS / 路由
 [vars]
 CORS_ALLOW_ORIGIN = "*"
-

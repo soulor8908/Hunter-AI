@@ -16,7 +16,10 @@ const PROVIDER_DEFAULT_MODEL: Record<Exclude<AIProvider, 'trial'>, string> = {
 };
 
 // 已部署的 Trial Worker（Cloudflare）
-const TRIAL_WORKER_URL = import.meta.env.VITE_TRIAL_WORKER_URL ?? 'https://hunter-ai-worker.470033918.workers.dev/api/ai';
+// - 生产环境：前后端同域（Worker + Static Assets），直接用相对路径 /api/ai
+// - 开发环境：用 VITE_TRIAL_WORKER_URL 指向远程 Worker，或保持默认 workers.dev
+// - 老部署：可用 VITE_TRIAL_WORKER_URL 覆盖
+const TRIAL_WORKER_URL = import.meta.env.VITE_TRIAL_WORKER_URL ?? '/api/ai';
 
 export interface ChatTurn {
   role: 'system' | 'user' | 'assistant';

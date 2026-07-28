@@ -25,6 +25,19 @@ export default {
 
     const url = new URL(req.url);
 
+    // 非后端 API 路径由 ASSETS 托管（前端 SPA + 静态资源）
+    // wrangler.toml [assets] 配置了 not_found_handling = "single-page-application"
+    // 但当 Worker 声明 ASSETS binding 时，所有请求默认由 Worker 处理
+    // 所以这里显式把非 /api 请求委托给 ASSETS
+    if (!url.pathname.startsWith('/api/')) {
+      // 仅对 CORS 预检在此处已处理；非 OPTIONS 的静态请求交给 ASSETS
+      if (req.method === 'GET' || req.method === 'HEAD') {
+        return env.ASSETS.fetch(req);
+      }
+      // POST/PUT/DELETE 等打到非 /api 路径，直接 404
+      return json({ error: 'Not found', path: url.pathname }, 404);
+    }
+
     // 健康检查
     if (url.pathname === '/api/health') {
       return json({ ok: true, ts: Date.now(), vectorize: !!env.JD_INDEX }, 200);

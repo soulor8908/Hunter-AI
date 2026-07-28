@@ -34,6 +34,11 @@ declare interface VectorizeIndex {
   describe(): Promise<{ dimension: number; metric: string; index_name: string; uuid: string }>;
 }
 
+// Fetcher (用于 ASSETS binding)
+declare interface Fetcher {
+  fetch(request: Request): Promise<Response>;
+}
+
 declare interface Env {
   AI_GATEWAY_PROVIDER: string;
   AI_GATEWAY_API_KEY: string;
@@ -48,5 +53,7 @@ declare interface Env {
   EMBEDDING_MODEL?: string;        // 默认 text-embedding-3-small
   // Vectorize 共享 JD 池
   JD_INDEX?: VectorizeIndex;
+  // Static Assets（前端 SPA 托管）
+  ASSETS: Fetcher;
 }
 
