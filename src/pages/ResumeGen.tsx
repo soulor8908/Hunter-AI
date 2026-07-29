@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useStore } from '@/store/useStore';
 import { getProfile, listExperiences, listResumes, saveResume, getResume, deleteResume } from '@/lib/db';
 import { streamChat, chatJSON, type ChatTurn } from '@/lib/ai';
+import { requireSettings } from '@/lib/constants';
 import { SYSTEM_PROMPT, JD_ANALYSIS_PROMPT, RESUME_GEN_PROMPT, fill } from '@/lib/prompts';
 import { renderMarkdown, toast, copyToClipboard, downloadText, cn, relativeTime } from '@/lib/utils';
 import { exportResumeToPDF, exportResumeToWord } from '@/lib/export';
@@ -66,18 +67,8 @@ export default function ResumeGen() {
     })();
   }, [id]);
 
-  const requireSettings = (): boolean => {
-    if (!aiSettings) {
-      toast('AI 设置加载中，请稍候', 'error');
-      return false;
-    }
-    if (aiSettings.provider !== 'trial' && !aiSettings.apiKey) {
-      toast('请先在设置中配置 API Key', 'error');
-      nav('/settings');
-      return false;
-    }
-    return true;
-  };
+  const checkSettings = (): boolean =>
+    requireSettings(aiSettings, { navigateToSettings: true, nav });
 
   const fetchJDFromUrl = async (urlToFetch?: string) => {
     const url = (urlToFetch ?? jdUrl).trim();
@@ -118,7 +109,7 @@ export default function ResumeGen() {
       toast('请粘贴 JD 或通过链接抓取', 'error');
       return;
     }
-    if (!requireSettings()) return;
+    if (!checkSettings()) return;
     setError('');
     setStep('analyzing');
     setAnalysis(null);
@@ -139,7 +130,7 @@ export default function ResumeGen() {
   };
 
   const generateResume = async () => {
-    if (!requireSettings()) return;
+    if (!checkSettings()) return;
     if (!analysis) {
       toast('请先拆解 JD', 'error');
       return;
@@ -455,6 +446,8 @@ ${e.description ? '描述: ' + e.description : ''}
           <div
             ref={resumeRef}
             className="prose-resume max-w-none bg-white text-ink-900 p-4 md:p-6 rounded-lg"
+            aria-live="polite"
+            aria-label={step === 'generating' ? '简历生成中' : '简历预览'}
             dangerouslySetInnerHTML={{ __html: renderMarkdown(streamingMd || (step === 'generating' ? '' : '_等待生成_')) }}
           />
         </div>

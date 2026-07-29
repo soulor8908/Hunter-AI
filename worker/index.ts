@@ -107,6 +107,7 @@ export default {
           }
         });
       } catch (e) {
+        console.error(JSON.stringify({ evt: 'ai_chat_err', path: '/api/ai/chat', ip, msg: (e as Error).message, stack: (e as Error).stack?.slice(0, 500) }));
         return jsonCORS({ error: (e as Error).message }, 502);
       }
     }
@@ -130,6 +131,7 @@ export default {
         await incUsed(env, ip);
         return jsonCORS({ embeddings }, 200);
       } catch (e) {
+        console.error(JSON.stringify({ evt: 'embedding_err', path: '/api/embedding', ip, msg: (e as Error).message }));
         return jsonCORS({ error: (e as Error).message }, 502);
       }
     }
@@ -175,6 +177,7 @@ export default {
         const extracted = extractJDFromHTML(html, targetUrl.hostname);
         return jsonCORS(extracted, 200);
       } catch (e) {
+        console.error(JSON.stringify({ evt: 'jd_fetch_err', path: '/api/jd/fetch', url: body.url, msg: (e as Error).message }));
         return jsonCORS({ error: `抓取失败：${(e as Error).message}` }, 502);
       }
     }
@@ -220,6 +223,7 @@ export default {
         }]);
         return jsonCORS({ id }, 200);
       } catch (e) {
+        console.error(JSON.stringify({ evt: 'jd_import_err', path: '/api/jd/import', msg: (e as Error).message }));
         return jsonCORS({ error: (e as Error).message }, 502);
       }
     }
@@ -254,6 +258,7 @@ export default {
         }));
         return jsonCORS({ matches }, 200);
       } catch (e) {
+        console.error(JSON.stringify({ evt: 'match_err', path: '/api/match', msg: (e as Error).message }));
         return jsonCORS({ error: (e as Error).message }, 502);
       }
     }

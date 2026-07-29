@@ -2,19 +2,10 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { listApplications, listExperiences, listInterviews, listResumes, listJobLeads, getProfile } from '@/lib/db';
 import { relativeTime, cn } from '@/lib/utils';
+import { STAGE_META } from '@/lib/constants';
 import type { Application, CareerProfile, Experience, InterviewPrep, JobLead, ResumeVersion } from '@/types';
 import { useStore } from '@/store/useStore';
 import Icon, { type IconName } from '@/components/Icon';
-
-const STAGE_LABEL: Record<Application['stage'], { label: string; color: string }> = {
-  planning: { label: '准备中', color: 'text-ink-400 bg-ink-700' },
-  submitted: { label: '已投递', color: 'text-blue-400 bg-blue-500/10' },
-  screening: { label: '筛选中', color: 'text-amber-400 bg-amber-500/10' },
-  interview: { label: '面试中', color: 'text-purple-400 bg-purple-500/10' },
-  offer: { label: 'Offer', color: 'text-accent bg-accent/10' },
-  rejected: { label: '未通过', color: 'text-red-400 bg-red-500/10' },
-  withdrawn: { label: '已撤回', color: 'text-ink-500 bg-ink-700' }
-};
 
 export default function Dashboard() {
   const [profile, setProfile] = useState<CareerProfile | null>(null);
@@ -164,7 +155,7 @@ export default function Dashboard() {
                   {a.nextAction ? `下一步：${a.nextAction}` : '更新于 ' + relativeTime(a.updatedAt)}
                 </div>
               </div>
-              <span className={cn('chip', STAGE_LABEL[a.stage].color)}>{STAGE_LABEL[a.stage].label}</span>
+              <span className={cn('chip', STAGE_META[a.stage].color)}>{STAGE_META[a.stage].label}</span>
             </Link>
           ))}
         </div>

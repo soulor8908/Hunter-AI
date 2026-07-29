@@ -10,6 +10,8 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "deploy:worker": "wrangler deploy",
     "deploy:pages": "wrangler pages deploy dist",
     "deploy": "npm run build && wrangler deploy",
@@ -41,6 +43,7 @@
     "typescript": "^5.5.4",
     "vite": "^5.3.5",
     "vite-plugin-pwa": "^0.20.1",
+    "vitest": "^1.6.1",
     "wrangler": "^4.114.0"
   }
 }

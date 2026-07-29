@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useStore } from '@/store/useStore';
 import { listInterviews, saveInterview, deleteInterview, listResumes, getResume } from '@/lib/db';
 import { streamChat, chatJSON, type ChatTurn } from '@/lib/ai';
+import { requireSettings } from '@/lib/constants';
 import { SYSTEM_PROMPT, INTERVIEW_PREP_PROMPT, fill } from '@/lib/prompts';
 import { toast, cn, relativeTime } from '@/lib/utils';
 import Icon from '@/components/Icon';
@@ -46,11 +47,7 @@ export default function Interview() {
   useEffect(() => { load(); }, []);
 
   const generate = async () => {
-    if (!aiSettings) return;
-    if (aiSettings.provider !== 'trial' && !aiSettings.apiKey) {
-      toast('请先配置 API Key', 'error');
-      return;
-    }
+    if (!requireSettings(aiSettings)) return;
     if (!jdText.trim()) {
       toast('请粘贴 JD', 'error');
       return;
@@ -166,7 +163,7 @@ export default function Interview() {
                       <div className="text-xs text-ink-100 truncate">{p.jobTitle} @ {p.company}</div>
                       <div className="text-[10px] text-ink-500">{p.questions.length} 题 · {relativeTime(p.updatedAt)}</div>
                     </button>
-                    <button className="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-red-400 text-xs px-2 shrink-0" onClick={() => remove(p.id)}><Icon name="close" size={12} /></button>
+                    <button className="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-red-400 text-xs px-2 shrink-0" onClick={() => remove(p.id)} aria-label={`删除面试准备 ${p.jobTitle} @ ${p.company}`}><Icon name="close" size={12} /></button>
                   </div>
                 ))}
               </div>

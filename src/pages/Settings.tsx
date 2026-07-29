@@ -3,14 +3,9 @@ import { useStore } from '@/store/useStore';
 import { getAISettings, saveAISettings } from '@/lib/db';
 import { toast } from '@/lib/utils';
 import { exportAll } from '@/lib/db';
+import { PROVIDER_PRESET } from '@/lib/constants';
 import type { AIProvider } from '@/types';
 import Icon, { type IconName } from '@/components/Icon';
-
-const PROVIDER_PRESET: Record<Exclude<AIProvider, 'trial'>, { label: string; model: string; baseUrl: string; help: string }> = {
-  openai: { label: 'OpenAI', model: 'gpt-4o-mini', baseUrl: 'https://api.openai.com/v1', help: 'https://platform.openai.com/api-keys' },
-  anthropic: { label: 'Anthropic Claude', model: 'claude-3-5-sonnet-20240620', baseUrl: 'https://api.anthropic.com/v1', help: 'https://console.anthropic.com/settings/keys' },
-  deepseek: { label: 'DeepSeek 深度求索', model: 'deepseek-chat', baseUrl: 'https://api.deepseek.com/v1', help: 'https://platform.deepseek.com/api_keys' }
-};
 
 export default function Settings() {
   const aiSettings = useStore((s) => s.aiSettings);

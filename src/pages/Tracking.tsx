@@ -2,18 +2,12 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { listApplications, saveApplication, deleteApplication, listResumes } from '@/lib/db';
 import { toast, cn, formatDateShort, relativeTime } from '@/lib/utils';
+import { STAGE_META, STAGE_ORDER } from '@/lib/constants';
+import BottomSheet from '@/components/BottomSheet';
 import Icon from '@/components/Icon';
 import type { Application, ApplicationStage, ResumeVersion } from '@/types';
 
-const STAGES: { key: ApplicationStage; label: string; border: string; dot: string }[] = [
-  { key: 'planning', label: '准备中', border: 'border-ink-600', dot: 'bg-ink-500' },
-  { key: 'submitted', label: '已投递', border: 'border-blue-500', dot: 'bg-blue-400' },
-  { key: 'screening', label: '筛选中', border: 'border-amber-500', dot: 'bg-amber-400' },
-  { key: 'interview', label: '面试中', border: 'border-purple-500', dot: 'bg-purple-400' },
-  { key: 'offer', label: 'Offer', border: 'border-accent', dot: 'bg-accent' },
-  { key: 'rejected', label: '未通过', border: 'border-red-500', dot: 'bg-red-400' },
-  { key: 'withdrawn', label: '已撤回', border: 'border-ink-700', dot: 'bg-ink-600' }
-];
+const STAGES = STAGE_ORDER.map((key) => ({ key, ...STAGE_META[key] }));
 
 export default function Tracking() {
   const nav = useNavigate();
@@ -114,6 +108,7 @@ export default function Tracking() {
                     <button
                       className="text-[10px] text-red-400 px-1.5 py-0.5 min-h-[24px]"
                       onClick={(e) => { e.stopPropagation(); remove(a.id); }}
+                      aria-label={`删除投递 ${a.jobTitle} @ ${a.company}`}
                     ><Icon name="close" size={12} /></button>
                   </div>
                 </div>
@@ -176,12 +171,7 @@ function AppForm({ initial, resumes, onClose, onSaved }: {
   };
 
   return (
-    <div className="fixed inset-0 bg-ink-900/80 backdrop-blur z-50 flex items-end md:items-center justify-center p-0 md:p-4" onClick={onClose}>
-      <div className="card p-5 max-w-xl w-full max-h-[90vh] overflow-y-auto rounded-t-2xl md:rounded-xl" onClick={e => e.stopPropagation()} style={{ paddingBottom: 'calc(1.25rem + env(safe-area-inset-bottom))' }}>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-semibold text-ink-100">{initial ? '编辑投递' : '新增投递'}</h3>
-          <button className="btn-ghost text-xs" onClick={onClose}><Icon name="close" /></button>
-        </div>
+    <BottomSheet open onClose={onClose} title={initial ? '编辑投递' : '新增投递'} maxWidth="max-w-xl">
         <div className="space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
@@ -250,7 +240,6 @@ function AppForm({ initial, resumes, onClose, onSaved }: {
             <button className="btn-primary" onClick={save}>保存</button>
           </div>
         </div>
-      </div>
-    </div>
+    </BottomSheet>
   );
 }

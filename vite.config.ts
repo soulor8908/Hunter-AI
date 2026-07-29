@@ -1,3 +1,4 @@
+/// <reference types="vitest" />
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
@@ -45,5 +46,9 @@ export default defineConfig({
   build: {
     target: 'es2022',
     sourcemap: false
+  },
+  test: {
+    environment: 'node',
+    include: ['src/**/*.{test,spec}.{ts,tsx}']
   }
 });

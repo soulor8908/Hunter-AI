@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useStore } from '@/store/useStore';
 import { listChats, saveChat, deleteChat, getResume, listResumes } from '@/lib/db';
 import { streamChat, type ChatTurn } from '@/lib/ai';
+import { requireSettings } from '@/lib/constants';
 import { SYSTEM_PROMPT, CHAT_SYSTEM_WITH_CONTEXT, fill } from '@/lib/prompts';
 import { toast, cn, relativeTime } from '@/lib/utils';
 import type { ChatSession, ResumeVersion } from '@/types';
@@ -71,11 +72,7 @@ export default function Chat() {
   const send = async (text?: string) => {
     const content = (text ?? input).trim();
     if (!content || streaming) return;
-    if (!aiSettings) return;
-    if (aiSettings.provider !== 'trial' && !aiSettings.apiKey) {
-      toast('请先配置 API Key', 'error');
-      return;
-    }
+    if (!requireSettings(aiSettings)) return;
 
     let session = current;
     if (!session) {
@@ -213,10 +210,11 @@ export default function Chat() {
                 <>
                   <div className="flex items-center justify-between">
                     <span className="truncate flex-1">{s.title}</span>
-                    <span
+                    <button
                       className="opacity-0 group-hover:opacity-100 text-red-400 px-1 shrink-0"
                       onClick={(e) => { e.stopPropagation(); remove(s.id); }}
-                    ><Icon name="close" size={14} /></span>
+                      aria-label={`删除会话 ${s.title}`}
+                    ><Icon name="close" size={14} /></button>
                   </div>
                   <div className="text-[10px] text-ink-600">{relativeTime(s.updatedAt)}</div>
                 </>
@@ -305,11 +303,13 @@ export default function Chat() {
           ))}
 
           {streaming && (
-            <Message role="assistant" content={streamText || '...'} streaming />
+            <div aria-live="polite" aria-atomic="false">
+              <Message role="assistant" content={streamText || '...'} streaming />
+            </div>
           )}
 
           {error && (
-            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-xs text-red-300">
+            <div role="alert" className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-xs text-red-300">
               <Icon name="alert" size={14} /> {error}
             </div>
           )}
@@ -348,6 +348,9 @@ export default function Chat() {
         <div
           className="md:hidden fixed inset-0 z-40 bg-ink-900/80 backdrop-blur-sm"
           onClick={() => setDrawerOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="会话列表"
         >
           <aside
             className="absolute left-0 top-0 bottom-0 w-72 max-w-[80vw] bg-ink-800 border-r border-ink-700 flex flex-col"
@@ -374,10 +377,11 @@ export default function Chat() {
                 >
                   <div className="flex items-center justify-between">
                     <span className="truncate flex-1">{s.title}</span>
-                    <span
+                    <button
                       className="text-red-400 px-1 shrink-0"
                       onClick={(e) => { e.stopPropagation(); remove(s.id); }}
-                    ><Icon name="close" size={14} /></span>
+                      aria-label={`删除会话 ${s.title}`}
+                    ><Icon name="close" size={14} /></button>
                   </div>
                   <div className="text-[10px] text-ink-600">{relativeTime(s.updatedAt)}</div>
                 </button>

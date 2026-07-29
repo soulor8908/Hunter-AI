@@ -5,11 +5,13 @@ import { useNavigate } from 'react-router-dom';
 import { useStore } from '@/store/useStore';
 import { getProfile, listExperiences, listJobLeads, saveJobLead, deleteJobLead, saveApplication, saveProfile } from '@/lib/db';
 import { chatJSON, embed, uploadToSharedPool, querySharedPool, canEmbedLocally, type ChatTurn } from '@/lib/ai';
+import { requireSettings } from '@/lib/constants';
 import { SYSTEM_PROMPT, JD_ANALYSIS_PROMPT, fill } from '@/lib/prompts';
 import { buildProfileText, buildJobLeadText, hashText, rankLeads } from '@/lib/matching';
 import { toast, cn, relativeTime } from '@/lib/utils';
 import type { AISettings, CareerProfile, Experience, JDAnalysis, JobLead } from '@/types';
 import Icon from '@/components/Icon';
+import BottomSheet from '@/components/BottomSheet';
 
 type ImportStep = 'idle' | 'analyzing' | 'embedding' | 'done';
 
@@ -268,7 +270,7 @@ export default function Jobs() {
                       <option value="applied">已投</option>
                       <option value="ignored">忽略</option>
                     </select>
-                    <button className="text-[10px] text-red-400 px-1.5 py-0.5 min-h-[24px] flex items-center justify-center" onClick={() => remove(lead.id)}><Icon name="close" size={12} /></button>
+                    <button className="text-[10px] text-red-400 px-1.5 py-0.5 min-h-[24px] flex items-center justify-center" onClick={() => remove(lead.id)} aria-label={`从 JD 池移除 ${lead.jobTitle}`}><Icon name="close" size={12} /></button>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-1.5 mt-2.5">
@@ -318,13 +320,7 @@ function ImportDrawer({
   const [error, setError] = useState('');
   const [shareToPool, setShareToPool] = useState(true);
 
-  const requireSettings = (): boolean => {
-    if (!aiSettings) { toast('AI 设置加载中', 'error'); return false; }
-    if (aiSettings.provider !== 'trial' && !aiSettings.apiKey) {
-      toast('请先在设置中配置 API Key', 'error'); return false;
-    }
-    return true;
-  };
+  const checkSettings = (): boolean => requireSettings(aiSettings);
 
   const tryAutoFillFromText = (text: string) => {
     // 简单启发式：尝试从 JD 文本提取标题/公司
@@ -340,7 +336,7 @@ function ImportDrawer({
 
   const run = async () => {
     if (!jdText.trim()) { toast('请粘贴 JD 文本', 'error'); return; }
-    if (!requireSettings()) return;
+    if (!checkSettings()) return;
     setError('');
     setStep('analyzing');
     abortRef.current = new AbortController();
@@ -416,19 +412,12 @@ function ImportDrawer({
   };
 
   return (
-    <div className="fixed inset-0 bg-ink-900/80 backdrop-blur z-50 flex items-end md:items-center justify-center p-0 md:p-4" onClick={step === 'idle' ? onClose : undefined}>
-      <div
-        className="card p-5 max-w-2xl w-full max-h-[90vh] overflow-y-auto rounded-t-2xl md:rounded-xl"
-        onClick={e => e.stopPropagation()}
-        style={{ paddingBottom: 'calc(1.25rem + env(safe-area-inset-bottom))' }}
-      >
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-semibold text-ink-100">导入 JD</h3>
-          <button className="btn-ghost text-xs flex items-center" onClick={step === 'idle' ? onClose : cancel} disabled={step === 'done'}>
-            {step === 'idle' ? <Icon name="close" size={14} /> : '取消'}
-          </button>
-        </div>
-
+    <BottomSheet
+      open
+      onClose={step === 'idle' ? onClose : cancel}
+      title="导入 JD"
+      dismissible={step === 'idle'}
+    >
         {step === 'idle' && (
           <div className="space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -494,7 +483,6 @@ function ImportDrawer({
             <div className="text-sm text-ink-300">导入成功</div>
           </div>
         )}
-      </div>
-    </div>
+    </BottomSheet>
   );
 }

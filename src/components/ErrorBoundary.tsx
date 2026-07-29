@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { reportError } from '@/lib/telemetry';
 
 interface Props {
   children: ReactNode;
@@ -22,11 +23,12 @@ export default class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
-    // 控制台结构化日志，便于排障（暂未接入远端上报）
-    console.error('[ErrorBoundary]', {
-      message: error.message,
-      stack: error.stack,
-      componentStack: info.componentStack
+    // 结构化日志 + 可选远端上报（用户开启遥测时）
+    reportError({
+      evt: 'render_error',
+      msg: error.message,
+      stack: error.stack?.slice(0, 1000),
+      meta: { componentStack: info.componentStack?.slice(0, 500) ?? '' }
     });
   }
 

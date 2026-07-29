@@ -2,18 +2,7 @@
 // 三层降级：用户自带 Key（零信任）→ Trial 配额（Worker 代理）→ 错误提示
 // 流式优先：所有 chat 走 SSE
 import type { AISettings, AIProvider } from '@/types';
-
-const PROVIDER_BASE_URL: Record<Exclude<AIProvider, 'trial'>, string> = {
-  openai: 'https://api.openai.com/v1',
-  anthropic: 'https://api.anthropic.com/v1',
-  deepseek: 'https://api.deepseek.com/v1'
-};
-
-const PROVIDER_DEFAULT_MODEL: Record<Exclude<AIProvider, 'trial'>, string> = {
-  openai: 'gpt-4o-mini',
-  anthropic: 'claude-3-5-sonnet-20240620',
-  deepseek: 'deepseek-chat'
-};
+import { PROVIDER_BASE_URL, PROVIDER_DEFAULT_MODEL } from '@/lib/constants';
 
 // 已部署的 Trial Worker（Cloudflare）
 // - 生产环境：前后端同域（Worker + Static Assets），直接用相对路径 /api/ai
