@@ -97,8 +97,8 @@ export default function Profile() {
         await importAll(text);
         toast('已导入，刷新中...', 'success');
         setTimeout(() => window.location.reload(), 800);
-      } catch {
-        toast('导入失败：JSON 格式错误', 'error');
+      } catch (e) {
+        toast(`导入失败：${(e as Error).message || 'JSON 格式错误'}`, 'error');
       }
     };
     input.click();

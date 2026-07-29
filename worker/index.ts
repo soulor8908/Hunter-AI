@@ -8,22 +8,51 @@ interface ChatMessage {
   content: string;
 }
 
-const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type'
-};
+/**
+ * CORS：默认同源（生产环境前后端同域）。
+ * 开发/第三方接入可通过 env.ALLOWED_ORIGINS（逗号分隔）扩展白名单。
+ * 不再使用 '*'，避免被任意网站当作免费 AI 代理消耗配额。
+ */
+function corsHeaders(req: Request, env: Env): Record<string, string> {
+  const origin = req.headers.get('Origin') || '';
+  const allowed = (env.ALLOWED_ORIGINS || '')
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean);
+  // 同源：Origin 与请求 Host 一致
+  const host = req.headers.get('Host') || '';
+  let allow = false;
+  if (origin) {
+    if (allowed.includes(origin)) allow = true;
+    else if (new URL(origin).host === host) allow = true;
+  }
+  return {
+    'Access-Control-Allow-Origin': allow ? origin : '',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS, GET',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Max-Age': '86400',
+    Vary: 'Origin'
+  };
+}
 
 const DEFAULT_EMBEDDING_MODEL = 'text-embedding-3-small';
 const EMBEDDING_DIM = 1536;
 
 export default {
   async fetch(req: Request, env: Env): Promise<Response> {
+    const cors = corsHeaders(req, env);
     if (req.method === 'OPTIONS') {
-      return new Response(null, { headers: CORS_HEADERS });
+      return new Response(null, { headers: cors });
     }
 
     const url = new URL(req.url);
+
+    // 辅助：带 CORS 的 JSON 响应
+    const jsonCORS = (data: unknown, status = 200): Response =>
+      new Response(JSON.stringify(data), {
+        status,
+        headers: { 'Content-Type': 'application/json', ...cors }
+      });
 
     // 非后端 API 路径由 ASSETS 托管（前端 SPA + 静态资源）
     // wrangler.toml [assets] 配置了 not_found_handling = "single-page-application"
@@ -35,12 +64,12 @@ export default {
         return env.ASSETS.fetch(req);
       }
       // POST/PUT/DELETE 等打到非 /api 路径，直接 404
-      return json({ error: 'Not found', path: url.pathname }, 404);
+      return jsonCORS({ error: 'Not found', path: url.pathname }, 404);
     }
 
     // 健康检查
     if (url.pathname === '/api/health') {
-      return json({ ok: true, ts: Date.now(), vectorize: !!env.JD_INDEX }, 200);
+      return jsonCORS({ ok: true, ts: Date.now(), vectorize: !!env.JD_INDEX }, 200);
     }
 
     // 配额查询
@@ -48,23 +77,23 @@ export default {
       const ip = getClientIP(req);
       const used = await getUsed(env, ip);
       const limit = parseInt(env.TRIAL_DAILY_QUOTA_PER_IP || '20');
-      return json({ used, limit, remaining: Math.max(0, limit - used) }, 200);
+      return jsonCORS({ used, limit, remaining: Math.max(0, limit - used) }, 200);
     }
 
     // AI 代理（chat）
     if (url.pathname === '/api/ai/chat') {
-      if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
+      if (req.method !== 'POST') return jsonCORS({ error: 'Method not allowed' }, 405);
 
       const ip = getClientIP(req);
       const limit = parseInt(env.TRIAL_DAILY_QUOTA_PER_IP || '20');
       const used = await getUsed(env, ip);
       if (used >= limit) {
-        return json({ error: '每日 Trial 配额已用尽，请配置自己的 API Key' }, 429);
+        return jsonCORS({ error: '每日 Trial 配额已用尽，请配置自己的 API Key' }, 429);
       }
 
       let body: { messages: ChatMessage[] };
-      try { body = await req.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
-      if (!body.messages?.length) return json({ error: 'messages required' }, 400);
+      try { body = await req.json(); } catch { return jsonCORS({ error: 'Invalid JSON' }, 400); }
+      if (!body.messages?.length) return jsonCORS({ error: 'messages required' }, 400);
 
       try {
         const upstream = await callUpstream(env, body.messages, true);
@@ -74,54 +103,58 @@ export default {
             'Content-Type': 'text/event-stream',
             'Cache-Control': 'no-cache',
             'Connection': 'keep-alive',
-            ...CORS_HEADERS
+            ...cors
           }
         });
       } catch (e) {
-        return json({ error: (e as Error).message }, 502);
+        return jsonCORS({ error: (e as Error).message }, 502);
       }
     }
 
     // Embedding 代理（Trial 用户 / 非 OpenAI provider 用）
     if (url.pathname === '/api/embedding') {
-      if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
+      if (req.method !== 'POST') return jsonCORS({ error: 'Method not allowed' }, 405);
       const ip = getClientIP(req);
       // 共享配额池，避免滥用
       const limit = parseInt(env.TRIAL_DAILY_QUOTA_PER_IP || '20');
       const used = await getUsed(env, ip);
       if (used >= limit) {
-        return json({ error: '每日 Trial 配额已用尽' }, 429);
+        return jsonCORS({ error: '每日 Trial 配额已用尽' }, 429);
       }
       let body: { texts: string[] };
-      try { body = await req.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
-      if (!body.texts?.length) return json({ error: 'texts required' }, 400);
+      try { body = await req.json(); } catch { return jsonCORS({ error: 'Invalid JSON' }, 400); }
+      if (!body.texts?.length) return jsonCORS({ error: 'texts required' }, 400);
 
       try {
         const embeddings = await embedViaUpstream(env, body.texts);
         await incUsed(env, ip);
-        return json({ embeddings }, 200);
+        return jsonCORS({ embeddings }, 200);
       } catch (e) {
-        return json({ error: (e as Error).message }, 502);
+        return jsonCORS({ error: (e as Error).message }, 502);
       }
     }
 
     // JD 链接抓取：从招聘网站 URL 提取 JD 正文
     if (url.pathname === '/api/jd/fetch') {
-      if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
+      if (req.method !== 'POST') return jsonCORS({ error: 'Method not allowed' }, 405);
 
       let body: { url?: string };
-      try { body = await req.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
+      try { body = await req.json(); } catch { return jsonCORS({ error: 'Invalid JSON' }, 400); }
 
-      if (!body.url) return json({ error: '缺少 url 参数' }, 400);
+      if (!body.url) return jsonCORS({ error: '缺少 url 参数' }, 400);
 
       let targetUrl: URL;
       try {
         targetUrl = new URL(body.url);
       } catch {
-        return json({ error: 'URL 格式无效' }, 400);
+        return jsonCORS({ error: 'URL 格式无效' }, 400);
       }
       if (!['http:', 'https:'].includes(targetUrl.protocol)) {
-        return json({ error: '仅支持 http/https 协议' }, 400);
+        return jsonCORS({ error: '仅支持 http/https 协议' }, 400);
+      }
+      // SSRF 防护：禁止抓取内网/保留地址（云元数据、本机、私有网段）
+      if (isDisallowedHost(targetUrl.hostname)) {
+        return jsonCORS({ error: '目标地址不被允许（内网/保留地址）' }, 400);
       }
 
       try {
@@ -135,21 +168,21 @@ export default {
         });
 
         if (!resp.ok) {
-          return json({ error: `目标站点返回 ${resp.status}` }, 502);
+          return jsonCORS({ error: `目标站点返回 ${resp.status}` }, 502);
         }
 
         const html = await resp.text();
         const extracted = extractJDFromHTML(html, targetUrl.hostname);
-        return json(extracted, 200);
+        return jsonCORS(extracted, 200);
       } catch (e) {
-        return json({ error: `抓取失败：${(e as Error).message}` }, 502);
+        return jsonCORS({ error: `抓取失败：${(e as Error).message}` }, 502);
       }
     }
 
     // 共享池：上传 JD 向量
     if (url.pathname === '/api/jd/import') {
-      if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
-      if (!env.JD_INDEX) return json({ error: 'Vectorize 未配置' }, 501);
+      if (req.method !== 'POST') return jsonCORS({ error: 'Method not allowed' }, 405);
+      if (!env.JD_INDEX) return jsonCORS({ error: 'Vectorize 未配置' }, 501);
 
       let body: {
         jobTitle: string;
@@ -159,13 +192,13 @@ export default {
         jdText: string;
         embedding: number[];
       };
-      try { body = await req.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
+      try { body = await req.json(); } catch { return jsonCORS({ error: 'Invalid JSON' }, 400); }
 
       if (!body.embedding || body.embedding.length !== EMBEDDING_DIM) {
-        return json({ error: `embedding 必须为 ${EMBEDDING_DIM} 维` }, 400);
+        return jsonCORS({ error: `embedding 必须为 ${EMBEDDING_DIM} 维` }, 400);
       }
       if (!body.jobTitle || !body.company) {
-        return json({ error: 'jobTitle 和 company 必填' }, 400);
+        return jsonCORS({ error: 'jobTitle 和 company 必填' }, 400);
       }
 
       // 用 ip + timestamp 生成不可逆 id（不存原始用户标识）
@@ -185,22 +218,22 @@ export default {
             uploadedAt: Date.now()
           }
         }]);
-        return json({ id }, 200);
+        return jsonCORS({ id }, 200);
       } catch (e) {
-        return json({ error: (e as Error).message }, 502);
+        return jsonCORS({ error: (e as Error).message }, 502);
       }
     }
 
     // 共享池：查询匹配
     if (url.pathname === '/api/match') {
-      if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
-      if (!env.JD_INDEX) return json({ error: 'Vectorize 未配置' }, 501);
+      if (req.method !== 'POST') return jsonCORS({ error: 'Method not allowed' }, 405);
+      if (!env.JD_INDEX) return jsonCORS({ error: 'Vectorize 未配置' }, 501);
 
       let body: { embedding: number[]; topK?: number };
-      try { body = await req.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
+      try { body = await req.json(); } catch { return jsonCORS({ error: 'Invalid JSON' }, 400); }
 
       if (!body.embedding || body.embedding.length !== EMBEDDING_DIM) {
-        return json({ error: `embedding 必须为 ${EMBEDDING_DIM} 维` }, 400);
+        return jsonCORS({ error: `embedding 必须为 ${EMBEDDING_DIM} 维` }, 400);
       }
 
       const topK = Math.min(Math.max(body.topK ?? 20, 1), 50);
@@ -219,13 +252,13 @@ export default {
           city: m.vector?.metadata?.city ? String(m.vector.metadata.city) : undefined,
           salary: m.vector?.metadata?.salary ? String(m.vector.metadata.salary) : undefined
         }));
-        return json({ matches }, 200);
+        return jsonCORS({ matches }, 200);
       } catch (e) {
-        return json({ error: (e as Error).message }, 502);
+        return jsonCORS({ error: (e as Error).message }, 502);
       }
     }
 
-    return json({ error: 'Not found', path: url.pathname }, 404);
+    return jsonCORS({ error: 'Not found', path: url.pathname }, 404);
   }
 };
 
@@ -266,11 +299,36 @@ function hashStr(s: string): string {
   return (h >>> 0).toString(36);
 }
 
-function json(data: unknown, status = 200): Response {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
-  });
+/**
+ * SSRF 防护：拒绝指向内网/保留地址的 hostname。
+ * Worker 无法预解析 DNS，因此对 IP 字面量和已知元数据 hostname 做硬过滤；
+ * 同时拒绝 localhost / *.local / *.internal 等保留名。
+ */
+function isDisallowedHost(hostname: string): boolean {
+  const h = hostname.toLowerCase().replace(/^\[|\]$/g, '');
+  if (h === 'localhost' || h.endsWith('.localhost') || h.endsWith('.local') || h.endsWith('.internal')) {
+    return true;
+  }
+  // 云元数据 endpoint 字面量
+  const META_HOSTS = ['169.254.169.254', 'metadata.google.internal', 'metadata.azure.com', '169.254.170.2'];
+  if (META_HOSTS.includes(h)) return true;
+  // IPv4 字面量
+  const m = h.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (m) {
+    const [a, b] = [parseInt(m[1]), parseInt(m[2])];
+    if (a === 10) return true;
+    if (a === 127) return true;
+    if (a === 0) return true;
+    if (a === 169 && b === 254) return true;        // link-local / 元数据
+    if (a === 172 && b >= 16 && b <= 31) return true; // 私有
+    if (a === 192 && b === 168) return true;          // 私有
+    if (a >= 224) return true;                        // 组播/保留
+  }
+  // IPv6 回环 / 私有
+  if (h === '::1' || h === '::' || h === '0:0:0:0:0:0:0:1') return true;
+  if (h.startsWith('fc') || h.startsWith('fd')) return true; // unique local
+  if (h.startsWith('fe80')) return true;                      // link-local
+  return false;
 }
 
 function getClientIP(req: Request): string {

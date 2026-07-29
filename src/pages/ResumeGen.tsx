@@ -186,12 +186,24 @@ ${e.description ? '描述: ' + e.description : ''}
     ];
 
     let full = '';
+    // 流式 token 用 rAF 节流：避免每个 token 触发一次 setState + markdown 重解析
+    let rafId = 0;
+    let pendingFlush = false;
+    const flush = () => {
+      pendingFlush = false;
+      setStreamingMd(full);
+    };
     await streamChat(messages, aiSettings!, {
       onToken: (t) => {
         full += t;
-        setStreamingMd(full);
+        if (!pendingFlush) {
+          pendingFlush = true;
+          rafId = requestAnimationFrame(flush);
+        }
       },
       onDone: async (finalText) => {
+        if (rafId) cancelAnimationFrame(rafId);
+        setStreamingMd(finalText);
         // 提取匹配度评分
         const scoreMatch = finalText.match(/匹配度自评[\s\S]*?(\d{1,3})\s*分/);
         const score = scoreMatch ? Math.min(100, parseInt(scoreMatch[1])) : undefined;
@@ -213,6 +225,7 @@ ${e.description ? '描述: ' + e.description : ''}
         setResumes(await listResumes());
       },
       onError: (e) => {
+        if (rafId) cancelAnimationFrame(rafId);
         setError(e.message);
         setStep('analyzed');
       }

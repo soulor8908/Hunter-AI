@@ -65,6 +65,9 @@ export default function Chat() {
     setSidebarOpen(false);
   };
 
+  // 保存最近一次 send 的用户消息，供 stop() 在 input 已被清空时还原
+  const lastUserContentRef = useRef('');
+
   const send = async (text?: string) => {
     const content = (text ?? input).trim();
     if (!content || streaming) return;
@@ -81,6 +84,7 @@ export default function Chat() {
 
     const userMsg = { id: nanoid(), role: 'user' as const, content, createdAt: Date.now() };
     const updatedMessages = [...session.messages, userMsg];
+    lastUserContentRef.current = content;
     setError('');
     setStreaming(true);
     setStreamText('');
@@ -134,14 +138,19 @@ export default function Chat() {
     abortRef.current?.abort();
     setStreaming(false);
     if (streamText) {
-      // 保留已生成内容
+      // 保留已生成内容；用户消息用 lastUserContentRef 还原（send 时 input 已被清空）
+      const userContent = lastUserContentRef.current;
       const aiMsg = { id: nanoid(), role: 'assistant' as const, content: streamText, createdAt: Date.now() };
       if (current) {
-        const userMsg = { id: nanoid(), role: 'user' as const, content: input || streamText, createdAt: Date.now() };
-        saveChat({ id: current.id, title: current.title, messages: [...current.messages, userMsg, aiMsg] }).then(async (s) => {
+        const messages = userContent
+          ? [...current.messages,
+              { id: nanoid(), role: 'user' as const, content: userContent, createdAt: Date.now() },
+              aiMsg]
+          : [...current.messages, aiMsg];
+        saveChat({ id: current.id, title: current.title, messages }).then(async (s) => {
           setCurrent(s);
           setSessions(await listChats());
-        });
+        }).catch(() => { /* 静默：停止时保存失败不阻塞用户 */ });
       }
       setStreamText('');
     }

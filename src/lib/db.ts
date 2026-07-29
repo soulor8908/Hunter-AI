@@ -309,17 +309,51 @@ export async function exportAll(): Promise<string> {
   }, null, 2);
 }
 
+/**
+ * 校验导入文件结构。返回错误消息字符串；通过校验返回 null。
+ * 不做深度类型校验（避免运行时开销），只挡明显畸形数据，防止后续渲染崩溃。
+ */
+function validateBackup(data: unknown): string | null {
+  if (typeof data !== 'object' || data === null) return '文件根节点不是对象';
+  const d = data as Record<string, unknown>;
+  if (typeof d.version !== 'number') return '缺少 version 字段或类型错误';
+  if (d.version > DB_VERSION) return `文件版本 v${d.version} 高于当前支持 v${DB_VERSION}，请升级应用`;
+  const arrStores = ['experiences', 'resumes', 'applications', 'interviews', 'chats', 'jobLeads'];
+  for (const k of arrStores) {
+    if (k in d && !Array.isArray(d[k])) return `字段 "${k}" 必须为数组`;
+  }
+  return null;
+}
+
 export async function importAll(json: string): Promise<void> {
+  let data: unknown;
+  try {
+    data = JSON.parse(json);
+  } catch {
+    throw new Error('JSON 解析失败：文件不是合法的 JSON');
+  }
+  const err = validateBackup(data);
+  if (err) throw new Error(`备份文件格式无效：${err}`);
+
+  const d = data as {
+    profile?: CareerProfile;
+    experiences?: Experience[];
+    resumes?: ResumeVersion[];
+    applications?: Application[];
+    interviews?: InterviewPrep[];
+    chats?: ChatSession[];
+    jobLeads?: JobLead[];
+  };
+
   const db = await getDB();
-  const data = JSON.parse(json);
   const tx = db.transaction(['profile', 'experience', 'resume', 'application', 'interview', 'chat', 'jobLead'], 'readwrite');
-  if (data.profile) await tx.objectStore('profile').put(data.profile);
-  for (const e of data.experiences ?? []) await tx.objectStore('experience').put(e);
-  for (const r of data.resumes ?? []) await tx.objectStore('resume').put(r);
-  for (const a of data.applications ?? []) await tx.objectStore('application').put(a);
-  for (const i of data.interviews ?? []) await tx.objectStore('interview').put(i);
-  for (const c of data.chats ?? []) await tx.objectStore('chat').put(c);
-  for (const j of data.jobLeads ?? []) await tx.objectStore('jobLead').put(j);
+  if (d.profile) await tx.objectStore('profile').put(d.profile);
+  for (const e of d.experiences ?? []) await tx.objectStore('experience').put(e);
+  for (const r of d.resumes ?? []) await tx.objectStore('resume').put(r);
+  for (const a of d.applications ?? []) await tx.objectStore('application').put(a);
+  for (const i of d.interviews ?? []) await tx.objectStore('interview').put(i);
+  for (const c of d.chats ?? []) await tx.objectStore('chat').put(c);
+  for (const j of d.jobLeads ?? []) await tx.objectStore('jobLead').put(j);
   await tx.done;
 }
 

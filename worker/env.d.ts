@@ -55,5 +55,7 @@ declare interface Env {
   JD_INDEX?: VectorizeIndex;
   // Static Assets（前端 SPA 托管）
   ASSETS: Fetcher;
+  // CORS 白名单（逗号分隔的 Origin 列表，未配置则仅允许同源）
+  ALLOWED_ORIGINS?: string;
 }
 

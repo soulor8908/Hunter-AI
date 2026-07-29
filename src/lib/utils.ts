@@ -1,6 +1,10 @@
 // Hunter AI — 工具函数
 import { clsx, type ClassValue } from 'clsx';
 import { marked } from 'marked';
+import DOMPurify from 'dompurify';
+
+// marked 全局只配置一次，避免每次 parse 都 setOptions 的副作用
+marked.setOptions({ breaks: true, gfm: true });
 
 export function cn(...inputs: ClassValue[]): string {
   return clsx(inputs);
@@ -37,8 +41,23 @@ export function relativeTime(ts: number): string {
 }
 
 export function renderMarkdown(md: string): string {
-  marked.setOptions({ breaks: true, gfm: true });
-  return marked.parse(md) as string;
+  // marked v14 默认不转义 HTML，AI 输出 / JD 抓取内容可能携带恶意脚本
+  // 必须经 DOMPurify 消毒后再注入 dangerouslySetInnerHTML
+  const rawHtml = marked.parse(md, { async: false }) as string;
+  return DOMPurify.sanitize(rawHtml, {
+    // 简历/对话场景需要的子集：禁止 <script>/<iframe>/on* 事件属性
+    ALLOWED_TAGS: [
+      'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+      'p', 'br', 'hr', 'blockquote', 'pre', 'code',
+      'ul', 'ol', 'li', 'dl', 'dt', 'dd',
+      'table', 'thead', 'tbody', 'tr', 'th', 'td',
+      'strong', 'em', 'del', 's', 'mark', 'sub', 'sup', 'u',
+      'a', 'span', 'div', 'img',
+      'b', 'i'
+    ],
+    ALLOWED_ATTR: ['href', 'title', 'src', 'alt', 'class', 'target', 'rel', 'colspan', 'rowspan'],
+    ALLOW_DATA_ATTR: false
+  });
 }
 
 export async function copyToClipboard(text: string): Promise<boolean> {
